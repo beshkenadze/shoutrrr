@@ -193,6 +193,20 @@ describe("verify command", () => {
     expect(tree.indexOf("Host")).toBeLessThan(tree.indexOf("Port"));
   });
 
+  test("validates (does not crash on) a service exposing getConfig() but no configFields()", async () => {
+    // Regression: TelegramService defines getConfig(), but its Config has no
+    // CLI-style configFields(). Guarding only on getConfig() would call
+    // getConfigFormat() and throw "config.configFields is not a function".
+    const { registerService } = await import("../src/core/router.js");
+    const { descriptor } = await import("@shoutrrr/telegram");
+    for (const scheme of descriptor.schemes) {
+      registerService(scheme, descriptor.factory as unknown as Parameters<typeof registerService>[1]);
+    }
+    const url = "telegram://110201543:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw@telegram?chats=@chan";
+    expect(() => runVerify(url)).not.toThrow();
+    expect(runVerify(url)).toBe("Service 'telegram' URL is valid.\n");
+  });
+
   test("throws for an unknown service scheme", () => {
     expect(() => runVerify("nope://")).toThrow(/unknown service/);
   });

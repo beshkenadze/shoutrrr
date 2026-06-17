@@ -1,28 +1,19 @@
 {
-  "name": "@shoutrrr/cli",
+  "name": "@shoutrrr/shoutrrr",
   "version": "0.0.0",
-  "description": "Shoutrrr CLI — URL-driven notification sender (Node.js/Bun port)",
+  "description": "Shoutrrr umbrella package — registers all notification services into the core router and re-exports the public API.",
   "type": "module",
-  "bin": {
-    "shoutrrr": "./src/cli.ts"
-  },
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts"
   },
-  "files": [
-    "src",
-    "dist"
-  ],
   "scripts": {
     "build": "tsc --noEmit",
     "test": "bun test"
   },
-  "license": "GPL-3.0",
-  "engines": {
-    "bun": ">=1.0.0"
-  },
   "dependencies": {
-    "commander": "^15.0.0",
+    "@shoutrrr/core": "workspace:*",
     "@shoutrrr/bark": "workspace:*",
     "@shoutrrr/discord": "workspace:*",
     "@shoutrrr/generic": "workspace:*",
@@ -30,6 +21,7 @@
     "@shoutrrr/gotify": "workspace:*",
     "@shoutrrr/ifttt": "workspace:*",
     "@shoutrrr/join": "workspace:*",
+    "@shoutrrr/logger": "workspace:*",
     "@shoutrrr/matrix": "workspace:*",
     "@shoutrrr/mattermost": "workspace:*",
     "@shoutrrr/ntfy": "workspace:*",

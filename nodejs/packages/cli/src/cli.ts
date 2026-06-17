@@ -10,6 +10,8 @@ import { Command } from "commander";
 
 // Importing the core barrel registers the built-in `logger://` service.
 import "./core/index.js";
+// Register the remaining 19 services so every scheme resolves.
+import "./register-services.js";
 import { createSendCommand } from "./commands/send.js";
 import { createVerifyCommand } from "./commands/verify.js";
 import { EX_USAGE, Result } from "./exit-codes.js";

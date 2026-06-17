@@ -15,7 +15,7 @@ export class Config extends EnumlessConfig implements ServiceConfig {
   tokenB = '';
   channel = '';
 
-  enums(): Record<string, EnumFormatter> {
+  override enums(): Record<string, EnumFormatter> {
     return {};
   }
 
