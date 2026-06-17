@@ -36,7 +36,7 @@ export class Config extends EnumlessConfig {
   token = '';
   title: string = DEFAULT_TITLE;
 
-  enums(): Record<string, EnumFormatter> {
+  override enums(): Record<string, EnumFormatter> {
     return {};
   }
 
