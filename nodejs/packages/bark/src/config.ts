@@ -1,7 +1,9 @@
-import { type FieldSchema } from './core/format.js';
-import { PropKeyResolver } from './core/propKeyResolver.js';
-import { EnumlessConfig } from './core/standard.js';
-import type { ServiceConfig } from './core/types.js';
+import {
+  EnumlessConfig,
+  type FieldSchema,
+  PropKeyResolver,
+  type ServiceConfig,
+} from '@shoutrrr/core';
 
 /** Scheme is the identifying part of this service's configuration URL. */
 export const Scheme = 'bark';
@@ -81,7 +83,7 @@ export class Config extends EnumlessConfig implements ServiceConfig {
   }
 
   setURL(url: URL): void {
-    const resolver = new PropKeyResolver(this as unknown as Record<string, unknown>, FIELDS);
+    const resolver = new PropKeyResolver(this, FIELDS);
     this.setURLWithResolver(resolver, url);
   }
 
@@ -90,11 +92,16 @@ export class Config extends EnumlessConfig implements ServiceConfig {
     this.deviceKey = decodeURIComponent(url.password);
     this.host = url.host;
     this.path = decodeURIComponent(url.pathname);
-    resolver.setFromURL(url);
+    // Mirror Go's setURL: every query key is fed through the resolver, so an
+    // unknown key (or an invalid value) is rejected. Core's setFromURL only
+    // visits known keys and silently ignores the rest, so we loop ourselves.
+    for (const [key, value] of url.searchParams) {
+      resolver.set(key, value);
+    }
   }
 
   getURL(): URL {
-    const resolver = new PropKeyResolver(this as unknown as Record<string, unknown>, FIELDS);
+    const resolver = new PropKeyResolver(this, FIELDS);
     return this.getURLWithResolver(resolver);
   }
 
