@@ -1,8 +1,14 @@
 // Port of Go pkg/services/pushbullet/pushbullet.go
 
-import { ApiError, JsonClient, type JsonClientOptions } from './core/jsonclient.js';
-import { Standard } from './core/standard.js';
-import type { Logger, Params, Service } from './core/types.js';
+import {
+  ApiError,
+  JsonClient,
+  type JsonClientOptions,
+  type Logger,
+  type Params,
+  type Service,
+  Standard,
+} from '@shoutrrr/core';
 import { Config } from './config.js';
 import {
   type PushRequest,
@@ -40,8 +46,8 @@ export class PushbulletService extends Standard implements Service {
   private client: JsonClient = new JsonClient();
 
   /**
-   * `clientOptions` exposes the undici dispatcher injection point for tests
-   * (MockAgent). It is applied during initialize().
+   * `clientOptions` exposes the transport injection point for tests (a `fetch`
+   * override or undici dispatcher). It is applied during initialize().
    */
   constructor(private readonly clientOptions: JsonClientOptions = {}) {
     super();
@@ -49,7 +55,9 @@ export class PushbulletService extends Standard implements Service {
 
   /** Initialize loads config from the URL and configures the Access-Token header. */
   initialize(configURL: URL, logger?: Logger): void {
-    this.setLogger(logger);
+    if (logger) {
+      this.setLogger(logger);
+    }
 
     this.config = new Config();
     this.config.setURL(configURL);

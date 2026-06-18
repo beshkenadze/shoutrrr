@@ -1,9 +1,12 @@
 // Port of Go pkg/services/pushbullet/pushbullet_config.go
 
-import { type FieldSchema } from './core/format.js';
-import { PropKeyResolver } from './core/propKeyResolver.js';
-import { EnumlessConfig } from './core/standard.js';
-import type { EnumFormatter, Params } from './core/types.js';
+import {
+  EnumlessConfig,
+  type EnumFormatter,
+  type FieldSchema,
+  type Params,
+  PropKeyResolver,
+} from '@shoutrrr/core';
 
 export const SCHEME = 'pushbullet';
 
@@ -41,10 +44,7 @@ export class Config extends EnumlessConfig {
   }
 
   private newResolver(): PropKeyResolver {
-    return new PropKeyResolver(
-      this as unknown as Record<string, string | number | boolean | string[]>,
-      CONFIG_SCHEMA,
-    );
+    return new PropKeyResolver(this, CONFIG_SCHEMA);
   }
 
   /** SetURL updates this config from a pushbullet:// URL representation. */
@@ -68,7 +68,21 @@ export class Config extends EnumlessConfig {
     this.token = token;
     this.targets = targets;
 
-    this.newResolver().setFromURL(url);
+    // Mirror Go's UpdateConfigFromURL: iterate the URL's actual query keys and
+    // apply each via the resolver. `set` lower-cases the key (so mixed-case
+    // query keys resolve) and throws on the first unknown/invalid key.
+    const resolver = this.newResolver();
+    const seen = new Set<string>();
+    for (const key of url.searchParams.keys()) {
+      if (seen.has(key)) {
+        continue;
+      }
+      seen.add(key);
+      const value = url.searchParams.get(key);
+      if (value !== null) {
+        resolver.set(key, value);
+      }
+    }
   }
 
   /** GetURL returns a URL representation of the current field values. */

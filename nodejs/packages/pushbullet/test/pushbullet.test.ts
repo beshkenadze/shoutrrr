@@ -1,13 +1,15 @@
 // Mirror of Go pkg/services/pushbullet/pushbullet_test.go
 //
-// HTTP mocking note: undici's MockAgent is non-functional under the Bun
-// runtime (Bun ships a stub `undici` module whose MockAgent/Agent classes are
-// empty). To still assert the real POST endpoint, Access-Token header and JSON
-// body — and that 200 resolves while errors reject — we intercept the undici
-// `request` function via Bun's module mock. This drives the real JsonClient and
-// PushbulletService code paths end-to-end.
+// HTTP mocking note: @shoutrrr/core's JsonClient is built on the global `fetch`
+// API, so tests override `globalThis.fetch` to assert the real POST endpoint,
+// Access-Token header and JSON body — and that 200 resolves while errors reject.
+// This drives the real JsonClient and PushbulletService code paths end-to-end.
 
-import { beforeEach, describe, expect, it, mock } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
+
+import { Config } from '../src/config.js';
+import { newNotePush, setTarget, type PushRequest } from '../src/payload.js';
+import { PushbulletService } from '../src/pushbullet.js';
 
 interface CapturedRequest {
   url: string;
@@ -26,22 +28,35 @@ let nextResponse: { statusCode: number; payload: unknown } = {
   payload: {},
 };
 
-mock.module('undici', () => ({
-  request: async (url: string, opts: CapturedRequest['opts']) => {
-    captured.push({ url, opts });
-    const data = JSON.stringify(nextResponse.payload);
-    return {
-      statusCode: nextResponse.statusCode,
-      body: { text: async () => data },
-    };
-  },
-}));
+const realFetch = globalThis.fetch;
 
-// Imported after the mock is registered so JsonClient picks up the stub.
-const { Config } = await import('../src/config.js');
-const { newNotePush, setTarget } = await import('../src/payload.js');
-const { PushbulletService } = await import('../src/pushbullet.js');
-type PushRequest = import('../src/payload.js').PushRequest;
+afterEach(() => {
+  globalThis.fetch = realFetch;
+});
+
+function installFetchMock(): void {
+  globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
+    const url = typeof input === 'string' ? input : input.toString();
+    const headers: Record<string, string> = {};
+    new Headers(init?.headers).forEach((value, key) => {
+      // Header names are lower-cased by Headers; remap the ones we assert on.
+      if (key === 'access-token') headers['Access-Token'] = value;
+      else if (key === 'content-type') headers['Content-Type'] = value;
+      else headers[key] = value;
+    });
+    captured.push({
+      url,
+      opts: {
+        method: init?.method ?? 'GET',
+        headers,
+        body: typeof init?.body === 'string' ? init.body : String(init?.body ?? ''),
+      },
+    });
+    return new Response(JSON.stringify(nextResponse.payload), {
+      status: nextResponse.statusCode,
+    });
+  }) as typeof fetch;
+}
 
 const TOKEN = 'tokentokentokentokentokentokentoke'; // 34 chars
 const ENDPOINT = 'https://api.pushbullet.com/v2/pushes';
@@ -137,6 +152,7 @@ describe('sending the payload', () => {
   beforeEach(() => {
     captured.length = 0;
     nextResponse = { statusCode: 200, payload: {} };
+    installFetchMock();
   });
 
   function newService(rawURL: string): InstanceType<typeof PushbulletService> {
