@@ -1,6 +1,6 @@
 // Port of Go pkg/services/smtp/smtp_encmethod.go.
-import { createEnumFormatter } from './core/enumFormatter.js';
-import type { EnumFormatter } from './core/types.js';
+import { createEnumFormatter } from '@shoutrrr/core';
+import type { EnumFormatter } from '@shoutrrr/core';
 
 /** Encryption is the transport encryption method (Go: encMethod). */
 export enum Encryption {

@@ -12,6 +12,7 @@
     "test": "bun test"
   },
   "dependencies": {
+    "@shoutrrr/core": "workspace:*",
     "nodemailer": "^9.0.1"
   },
   "devDependencies": {

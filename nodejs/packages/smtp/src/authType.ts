@@ -1,6 +1,6 @@
 // Port of Go pkg/services/smtp/smtp_authtype.go.
-import { createEnumFormatter } from './core/enumFormatter.js';
-import type { EnumFormatter } from './core/types.js';
+import { createEnumFormatter } from '@shoutrrr/core';
+import type { EnumFormatter } from '@shoutrrr/core';
 
 /** AuthType is the SMTP authentication method (Go: authType). */
 export enum AuthType {

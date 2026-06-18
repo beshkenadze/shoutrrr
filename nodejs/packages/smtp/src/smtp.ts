@@ -4,8 +4,8 @@ import nodemailer from 'nodemailer';
 import { AuthType } from './authType.js';
 import { Config } from './config.js';
 import { useImplicitTLS } from './encMethod.js';
-import { Standard } from './core/standard.js';
-import type { Logger, Params, Service } from './core/types.js';
+import { Standard } from '@shoutrrr/core';
+import type { Logger, Params, Service } from '@shoutrrr/core';
 
 /**
  * MailMessage is the message envelope handed to a transport (subset of
@@ -67,7 +67,9 @@ export class SmtpService implements Service {
 
   /** initialize loads the config from the URL (Go: Service.Initialize). */
   initialize(url: URL, logger?: Logger): void {
-    this.standard.setLogger(logger);
+    if (logger) {
+      this.standard.setLogger(logger);
+    }
 
     const config = new Config();
     config.setURL(url);

@@ -25,10 +25,10 @@ export type {
   Logger,
   ServiceConfig,
   Service,
-} from './core/types.js';
+} from '@shoutrrr/core';
 
 import { SmtpService } from './smtp.js';
-import type { Service } from './core/types.js';
+import type { Service } from '@shoutrrr/core';
 
 /** descriptor registers this service with the scheme registry. */
 export const descriptor: { schemes: string[]; factory: () => Service } = {
