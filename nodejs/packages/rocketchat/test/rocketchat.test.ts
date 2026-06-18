@@ -1,20 +1,4 @@
-import { describe, expect, it } from 'bun:test';
-// Bun shims the bare `undici` specifier with a non-functional MockAgent stub;
-// the deep import resolves to the real undici MockAgent, which interoperates
-// with the dispatcher-bound request used by the service under Bun.
-// @ts-expect-error -- no type declarations for the internal module path
-import MockAgent from 'undici/lib/mock/mock-agent.js';
-import type { Dispatcher } from 'undici';
-
-// Minimal shape of the options object passed to a MockAgent reply callback.
-interface MockReplyOptions {
-  path: string;
-  method: string;
-  headers: Record<string, string>;
-  body?: string;
-}
-
-const asDispatcher = (agent: unknown): Dispatcher => agent as Dispatcher;
+import { afterEach, describe, expect, it } from 'bun:test';
 import { Config } from '../src/config.js';
 import { createJSONPayload } from '../src/payload.js';
 import { RocketchatService, buildURL } from '../src/rocketchat.js';
@@ -143,92 +127,82 @@ describe('descriptor', () => {
 });
 
 describe('Sending messages', () => {
+  // Bun's undici MockAgent does not intercept the global fetch the core
+  // JsonClient uses, so the transport is exercised by overriding
+  // globalThis.fetch and restoring it after each test.
+  const realFetch = globalThis.fetch;
+  afterEach(() => {
+    globalThis.fetch = realFetch;
+  });
+
   it('posts the expected JSON payload and resolves on 200', async () => {
-    const agent = new MockAgent();
-    agent.disableNetConnect();
-    let capturedBody = '';
+    let capturedURL = '';
+    let capturedMethod = '';
     let capturedContentType = '';
-    let capturedPath = '';
+    let capturedBody = '';
 
-    const pool = agent.get('https://rocketchat.my-domain.com');
-    pool
-      .intercept({ path: '/hooks/tokenA/tokenB', method: 'POST' })
-      .reply((opts: MockReplyOptions) => {
-        capturedBody = String(opts.body);
-        capturedPath = opts.path;
-        const ct = opts.headers;
-        capturedContentType = ct['Content-Type'] ?? ct['content-type'] ?? '';
-        return { statusCode: 200, data: '' };
-      });
+    globalThis.fetch = (async (input: string | URL, init?: RequestInit) => {
+      capturedURL = String(input);
+      capturedMethod = init?.method ?? '';
+      const headers = new Headers(init?.headers);
+      capturedContentType = headers.get('Content-Type') ?? '';
+      capturedBody = String(init?.body ?? '');
+      return new Response('', { status: 200 });
+    }) as unknown as typeof fetch;
 
-    const service = new RocketchatService({ dispatcher: asDispatcher(agent) });
+    const service = new RocketchatService();
     service.initialize(
       new URL('rocketchat://testUserName@rocketchat.my-domain.com/tokenA/tokenB/testChannel'),
     );
 
     await service.send('this is a message');
 
-    expect(capturedPath).toBe('/hooks/tokenA/tokenB');
+    expect(capturedMethod).toBe('POST');
+    expect(capturedURL).toBe('https://rocketchat.my-domain.com/hooks/tokenA/tokenB');
     expect(capturedContentType).toBe('application/json');
     expect(JSON.parse(capturedBody)).toEqual({
       text: 'this is a message',
       username: 'testUserName',
       channel: '#testChannel',
     });
-    await agent.close();
   });
 
   it('posts to the host:port webhook when a port is set', async () => {
-    const agent = new MockAgent();
-    agent.disableNetConnect();
-    let hit = false;
+    let capturedURL = '';
 
-    const pool = agent.get('https://rocketchat.my-domain.com:5055');
-    pool
-      .intercept({ path: '/hooks/tokenA/tokenB', method: 'POST' })
-      .reply(() => {
-        hit = true;
-        return { statusCode: 200, data: '' };
-      });
+    globalThis.fetch = (async (input: string | URL) => {
+      capturedURL = String(input);
+      return new Response('', { status: 200 });
+    }) as unknown as typeof fetch;
 
-    const service = new RocketchatService({ dispatcher: asDispatcher(agent) });
+    const service = new RocketchatService();
     service.initialize(
       new URL('rocketchat://testUserName@rocketchat.my-domain.com:5055/tokenA/tokenB/testChannel'),
     );
 
     await service.send('this is a message');
-    expect(hit).toBe(true);
-    await agent.close();
+    // The port is preserved in the webhook URL (#495).
+    expect(capturedURL).toBe('https://rocketchat.my-domain.com:5055/hooks/tokenA/tokenB');
   });
 
   it('includes the response body in the error on non-200', async () => {
-    const agent = new MockAgent();
-    agent.disableNetConnect();
+    globalThis.fetch = (async () =>
+      new Response('bad payload', { status: 400 })) as unknown as typeof fetch;
 
-    const pool = agent.get('https://rocketchat.my-domain.com');
-    pool
-      .intercept({ path: '/hooks/tokenA/tokenB', method: 'POST' })
-      .reply(400, 'bad payload');
-
-    const service = new RocketchatService({ dispatcher: asDispatcher(agent) });
+    const service = new RocketchatService();
     service.initialize(new URL('rocketchat://rocketchat.my-domain.com/tokenA/tokenB'));
 
     await expect(service.send('this is a message')).rejects.toThrow(
       'notification failed: 400 bad payload',
     );
-    await agent.close();
   });
 
   it('reports the transport error with host and port context', async () => {
-    const agent = new MockAgent();
-    agent.disableNetConnect();
+    globalThis.fetch = (async () => {
+      throw new Error('network down');
+    }) as unknown as typeof fetch;
 
-    const pool = agent.get('https://rocketchat.my-domain.com:5055');
-    pool
-      .intercept({ path: '/hooks/tokenA/tokenB', method: 'POST' })
-      .replyWithError(new Error('network down'));
-
-    const service = new RocketchatService({ dispatcher: asDispatcher(agent) });
+    const service = new RocketchatService();
     service.initialize(new URL('rocketchat://rocketchat.my-domain.com:5055/tokenA/tokenB'));
 
     let message = '';
@@ -240,6 +214,5 @@ describe('Sending messages', () => {
     expect(message).toContain('network down');
     expect(message).toContain('HOST: rocketchat.my-domain.com');
     expect(message).toContain('PORT: 5055');
-    await agent.close();
   });
 });

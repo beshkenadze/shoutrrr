@@ -1,5 +1,5 @@
 import type { Config } from './config.js';
-import type { Params } from './core/index.js';
+import type { Params } from '@shoutrrr/core';
 
 // RocketchatPayload is the JSON body accepted by the Rocket.Chat webhook API.
 // username/channel are omitted when empty (Go `omitempty`).

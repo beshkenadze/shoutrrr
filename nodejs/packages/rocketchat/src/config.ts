@@ -1,5 +1,5 @@
-import { EnumlessConfig } from './core/index.js';
-import type { EnumFormatter, ServiceConfig } from './core/index.js';
+import { EnumlessConfig } from '@shoutrrr/core';
+import type { EnumFormatter, ServiceConfig } from '@shoutrrr/core';
 
 // Scheme is the identifying part of this service's configuration URL.
 export const Scheme = 'rocketchat';

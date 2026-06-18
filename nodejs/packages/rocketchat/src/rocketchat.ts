@@ -1,25 +1,26 @@
 import type { Dispatcher } from 'undici';
+import { ContentType, JsonClient, Standard } from '@shoutrrr/core';
+import type { Logger, Params, Service } from '@shoutrrr/core';
 import { Config } from './config.js';
 import { createJSONPayload } from './payload.js';
-import { Standard, request } from './core/index.js';
-import type { Logger, Params, Service } from './core/index.js';
 
 // RocketchatService sends notifications to a pre-configured Rocket.Chat
 // channel or user via an incoming webhook. Faithful port of rocketchat.go.
 export class RocketchatService extends Standard implements Service {
   private config?: Config;
-  private readonly dispatcher?: Dispatcher;
+  private readonly client: JsonClient;
 
-  // The dispatcher is injectable so tests can supply an undici MockAgent.
+  // The dispatcher is injectable so callers can supply a custom undici
+  // connection pool / proxy (forwarded to the core JsonClient on Node).
   constructor(opts?: { dispatcher?: Dispatcher }) {
     super();
-    if (opts?.dispatcher) {
-      this.dispatcher = opts.dispatcher;
-    }
+    this.client = new JsonClient(opts?.dispatcher ? { dispatcher: opts.dispatcher } : {});
   }
 
   initialize(configURL: URL, logger?: Logger): void {
-    this.setLogger(logger);
+    if (logger) {
+      this.setLogger(logger);
+    }
     const config = new Config();
     config.setURL(configURL);
     this.config = config;
@@ -34,13 +35,14 @@ export class RocketchatService extends Standard implements Service {
     const apiURL = buildURL(config);
     const payload = createJSONPayload(config, message, params);
 
-    let res;
+    // Use the raw request escape hatch: Rocket.Chat treats only HTTP 200 as
+    // success and surfaces the response body verbatim, so we keep control of
+    // the success/error handling instead of relying on ApiError.
+    let res: Response;
     try {
-      res = await request(apiURL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      res = await this.client.request('POST', apiURL, {
         body: JSON.stringify(payload),
-        ...(this.dispatcher ? { dispatcher: this.dispatcher } : {}),
+        contentType: ContentType,
       });
     } catch (err) {
       const reason = err instanceof Error ? err.message : String(err);
@@ -49,13 +51,10 @@ export class RocketchatService extends Standard implements Service {
       );
     }
 
-    if (res.statusCode !== 200) {
-      const body = await res.body.text();
-      throw new Error(`notification failed: ${res.statusCode} ${body}`);
+    if (res.status !== 200) {
+      const body = await res.text();
+      throw new Error(`notification failed: ${res.status} ${body}`);
     }
-
-    // Drain the body so the connection can be reused.
-    await res.body.dump();
   }
 }
 
