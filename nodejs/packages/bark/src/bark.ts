@@ -1,10 +1,18 @@
 import { Config } from './config.js';
-import { ApiError, JsonClient } from './core/jsonclient.js';
-import { PropKeyResolver } from './core/propKeyResolver.js';
-import { Standard } from './core/standard.js';
-import type { Logger, Params, Service } from './core/types.js';
+import {
+  ApiError,
+  JsonClient,
+  type JsonClientOptions,
+  type Logger,
+  type Params,
+  PropKeyResolver,
+  type Service,
+  Standard,
+} from '@shoutrrr/core';
 import { buildPushPayload, type ApiResponse } from './payload.js';
-import type { Dispatcher } from 'undici';
+
+/** Transport dispatcher accepted by the JSON client (e.g. an undici MockAgent). */
+type Dispatcher = NonNullable<JsonClientOptions['dispatcher']>;
 
 /**
  * BarkService sends notifications to a Bark server, mirroring Go's bark.Service.
@@ -29,10 +37,7 @@ export class BarkService extends Standard implements Service {
       this.setLogger(logger);
     }
     this.config = new Config();
-    this.resolver = new PropKeyResolver(
-      this.config as unknown as Record<string, unknown>,
-      Config.fields(),
-    );
+    this.resolver = new PropKeyResolver(this.config, Config.fields());
     this.resolver.setDefaultProps();
     this.config.setURLWithResolver(this.resolver, u);
   }

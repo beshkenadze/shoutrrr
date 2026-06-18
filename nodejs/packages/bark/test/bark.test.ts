@@ -75,10 +75,9 @@ describe('bark config', () => {
 });
 
 describe('bark send (mocked HTTP)', () => {
-  // Bun replaces the `undici` module with a fetch-based shim that ignores
-  // injected dispatchers (MockAgent / custom Dispatcher are not honored). To
-  // assert the wire behavior reliably under Bun we drive a real local server
-  // and point the service at it via an http:// bark URL.
+  // The service sends via @shoutrrr/core's fetch-based JsonClient. We drive a
+  // real local server and point the service at it via an http:// bark URL so we
+  // can capture and assert the wire request (method, path, content type, body).
   let server: ReturnType<typeof Bun.serve> | undefined;
 
   afterEach(() => {
