@@ -1,11 +1,12 @@
-import type { Dispatcher } from 'undici';
 import {
+  JsonClient,
+  type JsonClientOptions,
   type Logger,
   PropKeyResolver,
   type Params,
   type Service,
   Standard,
-} from './core/index.js';
+} from '@shoutrrr/core';
 import {
   buildWebhookURL,
   Config,
@@ -13,13 +14,10 @@ import {
   LegacyHost,
   PROP_SCHEMA,
 } from './config.js';
-import { JsonClient } from './core/jsonclient.js';
 import { buildPayload } from './payload.js';
 
-/** Options for constructing a TeamsService (allows injecting an undici dispatcher for tests). */
-export interface TeamsServiceOptions {
-  dispatcher?: Dispatcher;
-}
+/** Options for constructing a TeamsService (forwards the transport to JsonClient). */
+export type TeamsServiceOptions = JsonClientOptions;
 
 /** TeamsService sends notifications to a Microsoft Teams incoming webhook. */
 export class TeamsService implements Service {
@@ -28,7 +26,7 @@ export class TeamsService implements Service {
   private config = new Config();
 
   constructor(opts: TeamsServiceOptions = {}) {
-    this.client = new JsonClient(opts.dispatcher ? { dispatcher: opts.dispatcher } : {});
+    this.client = new JsonClient(opts);
   }
 
   setLogger(logger: Logger): void {
@@ -37,7 +35,9 @@ export class TeamsService implements Service {
 
   /** Loads config from the service URL and sets the logger (Go: Initialize). */
   initialize(url: URL, logger?: Logger): void {
-    this.standard.setLogger(logger);
+    if (logger) {
+      this.standard.setLogger(logger);
+    }
     this.config = new Config();
     this.config.host = LegacyHost;
     this.config.setURL(url);

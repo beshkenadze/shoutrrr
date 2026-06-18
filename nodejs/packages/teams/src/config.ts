@@ -1,10 +1,9 @@
 import {
-  type ConfigRecord,
   EnumlessConfig,
   type FieldSchema,
   PropKeyResolver,
   type ServiceConfig,
-} from './core/index.js';
+} from '@shoutrrr/core';
 
 /** Scheme is the identifying part of this service's configuration URL. */
 export const Scheme = 'teams';
@@ -82,7 +81,7 @@ const PROP_SCHEMA: FieldSchema[] = [
  * Config for the teams service, ported from teams_config.go. The URL parts
  * (group/tenant/altID/groupOwner) plus the key-tagged props (title/color/host).
  */
-export class Config extends EnumlessConfig implements ServiceConfig, ConfigRecord {
+export class Config extends EnumlessConfig implements ServiceConfig {
   [key: string]: unknown;
 
   group = '';
