@@ -1,4 +1,4 @@
-import type { Params } from './core/index.js';
+import type { Params } from '@shoutrrr/core';
 import type { MattermostConfig } from './config.js';
 
 /** JSON payload for mattermost notifications (port of mattermost_json.go JSON). */

@@ -3,7 +3,7 @@ import {
   type FieldSchema,
   PropKeyResolver,
   type ServiceConfig,
-} from './core/index.js';
+} from '@shoutrrr/core';
 
 /** Identifying scheme for the mattermost service. */
 export const SCHEME = 'mattermost';
@@ -51,7 +51,7 @@ export class MattermostConfig extends EnumlessConfig implements ServiceConfig {
   token = '';
 
   private resolver(): PropKeyResolver {
-    return new PropKeyResolver(this as MattermostConfig & Record<string, unknown>, QUERY_SCHEMA);
+    return new PropKeyResolver(this, QUERY_SCHEMA);
   }
 
   /** GetURL returns a URL representation of the current field values. */
