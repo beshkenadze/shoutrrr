@@ -1,7 +1,10 @@
-import type { FieldSchema } from "./core/format.js";
-import { PropKeyResolver } from "./core/propKeyResolver.js";
-import { EnumlessConfig } from "./core/standard.js";
-import type { EnumFormatter, ServiceConfig } from "./core/types.js";
+import {
+  EnumlessConfig,
+  type EnumFormatter,
+  type FieldSchema,
+  PropKeyResolver,
+  type ServiceConfig,
+} from "@shoutrrr/core";
 
 /** Scheme is the identifying part of this service's configuration URL. */
 export const Scheme = "ifttt";
@@ -60,11 +63,7 @@ export class Config extends EnumlessConfig implements ServiceConfig {
 
   /** newResolver builds a PropKeyResolver bound to this config. */
   newResolver(): PropKeyResolver {
-    return new PropKeyResolver(
-      this as unknown as Record<string, unknown>,
-      fieldSchema,
-      this.enums(),
-    );
+    return new PropKeyResolver(this, fieldSchema);
   }
 
   /** getURL returns a URL representation of the current field values. */
@@ -89,7 +88,21 @@ export class Config extends EnumlessConfig implements ServiceConfig {
     }
     this.webHookID = url.hostname;
 
-    resolver.setFromURL(url);
+    // Apply each distinct query key via the resolver, which throws on an
+    // unknown key (matching Go's setURL loop). Core's PropKeyResolver.setFromURL
+    // silently ignores unknown keys, so it is not used here.
+    const seen = new Set<string>();
+    for (const key of url.searchParams.keys()) {
+      if (seen.has(key)) {
+        continue;
+      }
+      seen.add(key);
+      resolver.set(key, url.searchParams.get(key) ?? "");
+    }
+
+    // Core's string[] parser splits "" into [""]; drop empty event names so an
+    // explicit `events=` is treated as no events (matching Go's empty handling).
+    this.events = this.events.filter((event) => event !== "");
 
     if (this.useMessageAsValue > 3 || this.useMessageAsValue < 1) {
       throw new Error(

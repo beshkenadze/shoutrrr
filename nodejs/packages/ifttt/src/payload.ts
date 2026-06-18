@@ -1,5 +1,5 @@
+import type { Params } from "@shoutrrr/core";
 import type { Config } from "./config.js";
-import type { Params } from "./core/types.js";
 
 /** JsonPayload is the actual notification payload, ported from ifttt_json.go. */
 export interface JsonPayload {
