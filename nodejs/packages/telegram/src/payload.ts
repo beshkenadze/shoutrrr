@@ -1,6 +1,6 @@
 // Port of telegram_json.go (payload + response shapes + builder)
-import type { Config } from './config.js';
-import { ParseMode, parseModeString } from './parseMode.js';
+import type { Config } from "./config.js";
+import { ParseMode, parseModeString } from "./parseMode.js";
 
 /** SendMessagePayload is the notification payload for the telegram service. */
 export interface SendMessagePayload {
@@ -94,11 +94,11 @@ function strictAtoi(s: string): number | undefined {
 /** Escapes the five HTML-significant characters (matches Go html.EscapeString). */
 function htmlEscapeString(s: string): string {
   return s
-    .replace(/&/g, '&amp;')
-    .replace(/'/g, '&#39;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&#34;');
+    .replace(/&/g, "&amp;")
+    .replace(/'/g, "&#39;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&#34;");
 }
 
 /**
@@ -112,7 +112,7 @@ export function createSendMessagePayload(
   config: Config,
 ): SendMessagePayload {
   let threadID: number | undefined;
-  const cutIndex = channel.indexOf(':');
+  const cutIndex = channel.indexOf(":");
   let chatID = channel;
   if (cutIndex !== -1) {
     chatID = channel.slice(0, cutIndex);
@@ -136,7 +136,7 @@ export function createSendMessagePayload(
 
   let parseMode = config.parseMode;
   let text = message;
-  if (config.parseMode === ParseMode.None && config.title !== '') {
+  if (config.parseMode === ParseMode.None && config.title !== "") {
     parseMode = ParseMode.HTML;
     // no parse mode has been provided, treat message as unescaped HTML
     text = htmlEscapeString(message);

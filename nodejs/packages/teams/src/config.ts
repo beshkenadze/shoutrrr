@@ -3,23 +3,24 @@ import {
   type FieldSchema,
   PropKeyResolver,
   type ServiceConfig,
-} from '@shoutrrr/core';
+} from "@shoutrrr/core";
 
 /** Scheme is the identifying part of this service's configuration URL. */
-export const Scheme = 'teams';
+export const Scheme = "teams";
 /** LegacyHost is the default host for legacy webhook requests. */
-export const LegacyHost = 'outlook.office.com';
+export const LegacyHost = "outlook.office.com";
 /** LegacyPath is the initial path of the webhook URL for legacy webhook requests. */
-export const LegacyPath = 'webhook';
+export const LegacyPath = "webhook";
 /** Path is the initial path of the webhook URL for domain-scoped webhook requests. */
-export const Path = 'webhookb2';
+export const Path = "webhookb2";
 /** ProviderName is the name of the Teams integration provider. */
-export const ProviderName = 'IncomingWebhook';
+export const ProviderName = "IncomingWebhook";
 
 /** A teams webhook is identified by exactly four parts. */
 export type WebhookParts = [string, string, string, string];
 
-const uuid4Pattern = /[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/;
+const uuid4Pattern =
+  /[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/;
 const hex32Pattern = /[A-Za-z0-9]{32}/;
 // Mirrors Go's parseAndVerifyWebhookURL regexp.
 const webhookURLPattern =
@@ -53,7 +54,7 @@ export function verifyWebhookParts(p: WebhookParts): void {
 export function parseAndVerifyWebhookURL(webhookURL: string): WebhookParts {
   const groups = webhookURLPattern.exec(webhookURL);
   if (!groups) {
-    throw new Error('invalid webhook URL format');
+    throw new Error("invalid webhook URL format");
   }
   return [groups[1]!, groups[2]!, groups[3]!, groups[4]!];
 }
@@ -72,9 +73,9 @@ export function buildWebhookURL(
 
 /** Field schema for the key-tagged props (title/color/host) used by PropKeyResolver. */
 const PROP_SCHEMA: FieldSchema[] = [
-  { name: 'color', type: 'string', key: ['color'] },
-  { name: 'host', type: 'string', key: ['host'], default: LegacyHost },
-  { name: 'title', type: 'string', key: ['title'] },
+  { name: "color", type: "string", key: ["color"] },
+  { name: "host", type: "string", key: ["host"], default: LegacyHost },
+  { name: "title", type: "string", key: ["title"] },
 ];
 
 /**
@@ -84,13 +85,13 @@ const PROP_SCHEMA: FieldSchema[] = [
 export class Config extends EnumlessConfig implements ServiceConfig {
   [key: string]: unknown;
 
-  group = '';
-  tenant = '';
-  altID = '';
-  groupOwner = '';
+  group = "";
+  tenant = "";
+  altID = "";
+  groupOwner = "";
 
-  title = '';
-  color = '';
+  title = "";
+  color = "";
   host = LegacyHost;
 
   /** Returns the four webhook parts in order (Go: webhookParts). */
@@ -117,7 +118,7 @@ export class Config extends EnumlessConfig implements ServiceConfig {
     // Host must be set before username/pathname: WHATWG URL drops userinfo
     // and ignores a path while the host is empty.
     url.host = this.tenant;
-    if (this.group !== '') {
+    if (this.group !== "") {
       url.username = this.group;
     }
     url.pathname = `/${this.altID}/${this.groupOwner}`;
@@ -131,20 +132,20 @@ export class Config extends EnumlessConfig implements ServiceConfig {
     let webhookParts: WebhookParts;
 
     const password = url.password;
-    if (password !== '') {
+    if (password !== "") {
       // Legacy format: user is "group@tenant" with the AltID as the password.
-      const parts = decodeURIComponent(url.username).split('@');
+      const parts = decodeURIComponent(url.username).split("@");
       if (parts.length !== 2) {
-        throw new Error('invalid URL format');
+        throw new Error("invalid URL format");
       }
       webhookParts = [parts[0]!, parts[1]!, password, url.hostname];
     } else {
-      const segments = trimLeadingSlash(url.pathname).split('/');
+      const segments = trimLeadingSlash(url.pathname).split("/");
       webhookParts = [
         decodeURIComponent(url.username),
         url.hostname,
-        decodeURIComponent(segments[0] ?? ''),
-        decodeURIComponent(segments[1] ?? ''),
+        decodeURIComponent(segments[0] ?? ""),
+        decodeURIComponent(segments[1] ?? ""),
       ];
     }
 
@@ -172,7 +173,7 @@ export function configFromWebhookURL(webhookURL: URL): Config {
 }
 
 function trimLeadingSlash(path: string): string {
-  return path.startsWith('/') ? path.slice(1) : path;
+  return path.startsWith("/") ? path.slice(1) : path;
 }
 
 export { PROP_SCHEMA };

@@ -46,7 +46,9 @@ async function readStdin(): Promise<string> {
  * configurationError) on a fatal error, mirroring the Go `run` function.
  */
 export async function runSend(options: SendOptions): Promise<SendResult[]> {
-  const logf = options.logf ?? ((line: string): void => void process.stderr.write(`${line}\n`));
+  const logf =
+    options.logf ??
+    ((line: string): void => void process.stderr.write(`${line}\n`));
   const readMessage = options.stdin ?? readStdin;
 
   const urls = removeDuplicates(options.urls);
@@ -71,7 +73,10 @@ export async function runSend(options: SendOptions): Promise<SendResult[]> {
     if (title !== "") {
       logf(`Title: ${title}`);
     }
-    logger = { logf: (format: string, ...args: unknown[]): void => logf(simpleFormat(format, args)) };
+    logger = {
+      logf: (format: string, ...args: unknown[]): void =>
+        logf(simpleFormat(format, args)),
+    };
   }
 
   const params: Params = {};
@@ -92,7 +97,10 @@ export async function runSend(options: SendOptions): Promise<SendResult[]> {
         // router.New -> "error initializing router services: <err>", then send
         // -> "error invoking send: <that>".
         const wrapped = `error initializing router services: ${errMessage(err)}`;
-        return { url, error: configurationError(`error invoking send: ${wrapped}`) };
+        return {
+          url,
+          error: configurationError(`error invoking send: ${wrapped}`),
+        };
       }
       const errs = await router.sendAsync(message, params);
       if (errs.length > 0) {
@@ -113,7 +121,9 @@ function errMessage(err: unknown): string {
 /** Minimal printf-style %s/%v/%d substitution for the verbose logger. */
 function simpleFormat(format: string, args: unknown[]): string {
   let i = 0;
-  return format.replace(/%[svd]/g, () => (i < args.length ? String(args[i++]) : ""));
+  return format.replace(/%[svd]/g, () =>
+    i < args.length ? String(args[i++]) : "",
+  );
 }
 
 /** Builds the commander `send` subcommand. */
@@ -126,22 +136,35 @@ export function createSendCommand(): Command {
       "-m, --message <message>",
       "The message to send to the notification url, or - to read message from stdin",
     )
-    .option("-t, --title <title>", "The title used for services that support it")
+    .option(
+      "-t, --title <title>",
+      "The title used for services that support it",
+    )
     .option("-v, --verbose", "Verbose output", false)
-    .action(async (opts: { url: string[]; message: string; title?: string; verbose?: boolean }) => {
-      const results = await runSend({
-        urls: opts.url,
-        message: opts.message,
-        title: opts.title,
-        verbose: opts.verbose ?? false,
-      });
+    .action(
+      async (opts: {
+        url: string[];
+        message: string;
+        title?: string;
+        verbose?: boolean;
+      }) => {
+        const results = await runSend({
+          urls: opts.url,
+          message: opts.message,
+          title: opts.title,
+          verbose: opts.verbose ?? false,
+        });
 
-      const failed = results.find((r) => r.error !== undefined);
-      if (failed?.error !== undefined) {
-        process.stderr.write(`${failed.error.message}\n`);
-        const exitCode = "exitCode" in failed.error ? (failed.error as { exitCode: number }).exitCode : 1;
-        process.exitCode = exitCode;
-      }
-    });
+        const failed = results.find((r) => r.error !== undefined);
+        if (failed?.error !== undefined) {
+          process.stderr.write(`${failed.error.message}\n`);
+          const exitCode =
+            "exitCode" in failed.error
+              ? (failed.error as { exitCode: number }).exitCode
+              : 1;
+          process.exitCode = exitCode;
+        }
+      },
+    );
   return cmd;
 }

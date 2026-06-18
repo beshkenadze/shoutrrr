@@ -27,7 +27,7 @@ export interface ErrorResponse {
  * errorResponse and succeeds for ANY JSON object — missing fields stay zero-valued.
  */
 export function isErrorResponse(body: unknown): body is Partial<ErrorResponse> {
-  return typeof body === 'object' && body !== null && !Array.isArray(body);
+  return typeof body === "object" && body !== null && !Array.isArray(body);
 }
 
 /**
@@ -35,8 +35,8 @@ export function isErrorResponse(body: unknown): body is Partial<ErrorResponse> {
  * "respondend" typo and Go's zero-value defaults for absent fields.
  */
 export function formatErrorResponse(er: Partial<ErrorResponse>): string {
-  const name = er.error ?? '';
+  const name = er.error ?? "";
   const code = er.errorCode ?? 0;
-  const description = er.errorDescription ?? '';
+  const description = er.errorDescription ?? "";
   return `server respondend with ${name} (${code}): ${description}`;
 }

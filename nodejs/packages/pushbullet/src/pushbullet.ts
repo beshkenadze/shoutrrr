@@ -8,16 +8,16 @@ import {
   type Params,
   type Service,
   Standard,
-} from '@shoutrrr/core';
-import { Config } from './config.js';
+} from "@shoutrrr/core";
+import { Config } from "./config.js";
 import {
+  newNotePush,
   type PushRequest,
   type PushResponse,
-  newNotePush,
   setTarget,
-} from './payload.js';
+} from "./payload.js";
 
-const PUSHES_ENDPOINT = 'https://api.pushbullet.com/v2/pushes';
+const PUSHES_ENDPOINT = "https://api.pushbullet.com/v2/pushes";
 
 /**
  * Mirrors Go's `client.ErrorResponse`: any JSON-object error body deserializes
@@ -27,17 +27,17 @@ const PUSHES_ENDPOINT = 'https://api.pushbullet.com/v2/pushes';
 function isErrorResponse(
   body: unknown,
 ): body is { error: { message: string } } {
-  return typeof body === 'object' && body !== null;
+  return typeof body === "object" && body !== null;
 }
 
 /** Extracts the API error message from a parsed error body (possibly empty). */
 function apiErrorMessage(body: object): string {
   const errorField = (body as { error?: unknown }).error;
-  if (typeof errorField === 'object' && errorField !== null) {
+  if (typeof errorField === "object" && errorField !== null) {
     const message = (errorField as { message?: unknown }).message;
-    return typeof message === 'string' ? message : '';
+    return typeof message === "string" ? message : "";
   }
-  return '';
+  return "";
 }
 
 /** PushbulletService provides Pushbullet as a notification service. */
@@ -63,7 +63,7 @@ export class PushbulletService extends Standard implements Service {
     this.config.setURL(configURL);
 
     this.client = new JsonClient(this.clientOptions);
-    this.client.headers['Access-Token'] = this.config.token;
+    this.client.headers["Access-Token"] = this.config.token;
   }
 
   /** Send a push notification via Pushbullet, one request per target. */
@@ -79,7 +79,11 @@ export class PushbulletService extends Standard implements Service {
     }
   }
 
-  private async doSend(title: string, target: string, message: string): Promise<void> {
+  private async doSend(
+    title: string,
+    target: string,
+    message: string,
+  ): Promise<void> {
     const push: PushRequest = newNotePush(message, title);
     setTarget(push, target);
 

@@ -16,7 +16,9 @@ const messageLevelStrings: Record<MessageLevel, string> = {
 
 /** levelString returns the human-readable name for a message level. */
 export function levelString(level: MessageLevel): string {
-  return messageLevelStrings[level] ?? messageLevelStrings[MessageLevel.Unknown];
+  return (
+    messageLevelStrings[level] ?? messageLevelStrings[MessageLevel.Unknown]
+  );
 }
 
 /** Field is a key/value pair attached to a message item. */

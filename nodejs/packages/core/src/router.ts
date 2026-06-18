@@ -6,7 +6,7 @@
  * (minus the trailing ':'), lower-cased, with anything after a '+' stripped
  * (e.g. `slack+webhook` => `slack`).
  */
-import type { Logger, Params, Service } from './types.ts';
+import type { Logger, Params, Service } from "./types.ts";
 
 /** Factory that produces a fresh, uninitialized service instance. */
 export type ServiceFactory = () => Service;
@@ -26,8 +26,8 @@ export function getServiceFactory(scheme: string): ServiceFactory | undefined {
 /** Extracts the base scheme from a raw URL: lower-cased, split on '+'. */
 export function extractScheme(rawURL: string): string {
   const url = new URL(rawURL);
-  const protocol = url.protocol.replace(/:$/, '');
-  return protocol.toLowerCase().split('+')[0] as string;
+  const protocol = url.protocol.replace(/:$/, "");
+  return protocol.toLowerCase().split("+")[0] as string;
 }
 
 export class ServiceRouter {

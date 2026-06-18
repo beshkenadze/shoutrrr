@@ -1,11 +1,16 @@
-import { RocketchatService } from './rocketchat.js';
+import { RocketchatService } from "./rocketchat.js";
 
-export { RocketchatService, buildURL } from './rocketchat.js';
-export { Config, createConfigFromURL, Scheme, NotEnoughArguments } from './config.js';
-export { createJSONPayload } from './payload.js';
-export type { RocketchatPayload } from './payload.js';
+export {
+  Config,
+  createConfigFromURL,
+  NotEnoughArguments,
+  Scheme,
+} from "./config.js";
+export type { RocketchatPayload } from "./payload.js";
+export { createJSONPayload } from "./payload.js";
+export { buildURL, RocketchatService } from "./rocketchat.js";
 
 export const descriptor = {
-  schemes: ['rocketchat'] as const,
+  schemes: ["rocketchat"] as const,
   factory: (): RocketchatService => new RocketchatService(),
 };

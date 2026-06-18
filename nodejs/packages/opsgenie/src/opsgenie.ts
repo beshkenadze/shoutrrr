@@ -1,19 +1,15 @@
-import type { Dispatcher } from "undici";
 import {
   ApiError,
   JsonClient,
-  parseBody,
-  Standard,
   type Logger,
   type Params,
+  parseBody,
   type Service,
+  Standard,
 } from "@shoutrrr/core";
+import type { Dispatcher } from "undici";
 import { Config } from "./config.ts";
-import {
-  type AlertPayload,
-  Entity,
-  serializeAlertPayload,
-} from "./payload.ts";
+import { type AlertPayload, Entity, serializeAlertPayload } from "./payload.ts";
 
 /** Maximum message length (in bytes) before it is split into title + description. */
 const MAX_TITLE_LENGTH = 130;

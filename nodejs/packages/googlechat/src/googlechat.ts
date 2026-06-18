@@ -1,8 +1,9 @@
 // Port of Go pkg/services/googlechat/googlechat.go.
-import type { Dispatcher } from 'undici';
-import { ApiError, JsonClient, Standard } from '@shoutrrr/core';
-import type { Logger, Params, Service } from '@shoutrrr/core';
-import { GoogleChatConfig } from './config.ts';
+
+import type { Logger, Params, Service } from "@shoutrrr/core";
+import { ApiError, JsonClient, Standard } from "@shoutrrr/core";
+import type { Dispatcher } from "undici";
+import { GoogleChatConfig } from "./config.ts";
 
 /** JSON is the actual payload being sent to the Google Chat API. */
 interface GoogleChatPayload {
@@ -38,7 +39,7 @@ export class GoogleChatService extends Standard implements Service {
   /** Sends a notification message to Google Chat. */
   async send(message: string, _params?: Params): Promise<void> {
     if (!this.config) {
-      throw new Error('service not initialized');
+      throw new Error("service not initialized");
     }
 
     const postURL = this.config.getAPIURL().toString();

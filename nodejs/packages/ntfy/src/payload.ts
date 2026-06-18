@@ -10,8 +10,8 @@ export interface ApiResponse {
 
 /** formatApiError mirrors Go apiResponse.Error(): "server response: <msg> (<code>)". */
 export function formatApiError(response: ApiResponse): string {
-  const msg = `server response: ${response.error ?? ''} (${response.code ?? 0})`;
-  if (response.link && response.link !== '') {
+  const msg = `server response: ${response.error ?? ""} (${response.code ?? 0})`;
+  if (response.link && response.link !== "") {
     return `${msg}, see: ${response.link}`;
   }
   return msg;

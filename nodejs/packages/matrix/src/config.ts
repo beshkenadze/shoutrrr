@@ -3,10 +3,10 @@ import {
   EnumlessConfig,
   type FieldSchema,
   PropKeyResolver,
-} from '@shoutrrr/core';
+} from "@shoutrrr/core";
 
-export const Scheme = 'matrix';
-export const defaultDeviceID = 'shoutrrr';
+export const Scheme = "matrix";
+export const defaultDeviceID = "shoutrrr";
 
 // decodeURIComponentSafe tolerates malformed percent-escapes (e.g. a literal
 // "%" in a password/token) by returning the raw value instead of throwing.
@@ -23,31 +23,31 @@ function decodeURIComponentSafe(value: string): string {
 // Keys are lower-cased (as Go's PropKeyResolver lower-cases every key tag), so
 // buildQuery emits them and case-insensitive URL reads in setURLWith resolve.
 export const matrixFields: FieldSchema[] = [
-  { name: 'disableTLS', type: 'bool', key: ['disabletls'], default: 'No' },
+  { name: "disableTLS", type: "bool", key: ["disabletls"], default: "No" },
   {
-    name: 'deviceID',
-    type: 'string',
-    key: ['deviceid'],
+    name: "deviceID",
+    type: "string",
+    key: ["deviceid"],
     default: defaultDeviceID,
-    desc: 'Device ID for password login; keeps Matrix homeservers from creating a new device for each login',
+    desc: "Device ID for password login; keeps Matrix homeservers from creating a new device for each login",
   },
   {
-    name: 'rooms',
-    type: 'string[]',
-    key: ['rooms', 'room'],
-    desc: 'Room aliases, or with ! prefix, room IDs',
+    name: "rooms",
+    type: "string[]",
+    key: ["rooms", "room"],
+    desc: "Room aliases, or with ! prefix, room IDs",
   },
-  { name: 'title', type: 'string', key: ['title'], default: '' },
+  { name: "title", type: "string", key: ["title"], default: "" },
 ];
 
 export class Config extends EnumlessConfig {
-  user = '';
-  password = '';
+  user = "";
+  password = "";
   disableTLS = false;
   deviceID = defaultDeviceID;
-  host = '';
+  host = "";
   rooms: string[] = [];
-  title = '';
+  title = "";
 
   newResolver(): PropKeyResolver {
     return new PropKeyResolver(this, matrixFields);
@@ -78,9 +78,9 @@ export class Config extends EnumlessConfig {
   getURLString(): string {
     const query = this.newResolver().buildQuery();
     const userInfo =
-      this.user !== '' || this.password !== ''
+      this.user !== "" || this.password !== ""
         ? `${encodeURIComponent(this.user)}:${encodeURIComponent(this.password)}@`
-        : '';
+        : "";
     return `${Scheme}://${userInfo}${this.host}?${query}`;
   }
 
@@ -111,7 +111,7 @@ export class Config extends EnumlessConfig {
         return room;
       }
       const first = room[0];
-      if (first !== '#' && first !== '!') {
+      if (first !== "#" && first !== "!") {
         return `#${room}`;
       }
       return room;

@@ -1,8 +1,8 @@
-import type { Dispatcher } from 'undici';
-import { ContentType, JsonClient, Standard } from '@shoutrrr/core';
-import type { Logger, Params, Service } from '@shoutrrr/core';
-import { Config } from './config.js';
-import { createJSONPayload } from './payload.js';
+import type { Logger, Params, Service } from "@shoutrrr/core";
+import { ContentType, JsonClient, Standard } from "@shoutrrr/core";
+import type { Dispatcher } from "undici";
+import { Config } from "./config.js";
+import { createJSONPayload } from "./payload.js";
 
 // RocketchatService sends notifications to a pre-configured Rocket.Chat
 // channel or user via an incoming webhook. Faithful port of rocketchat.go.
@@ -14,7 +14,9 @@ export class RocketchatService extends Standard implements Service {
   // connection pool / proxy (forwarded to the core JsonClient on Node).
   constructor(opts?: { dispatcher?: Dispatcher }) {
     super();
-    this.client = new JsonClient(opts?.dispatcher ? { dispatcher: opts.dispatcher } : {});
+    this.client = new JsonClient(
+      opts?.dispatcher ? { dispatcher: opts.dispatcher } : {},
+    );
   }
 
   initialize(configURL: URL, logger?: Logger): void {
@@ -29,7 +31,7 @@ export class RocketchatService extends Standard implements Service {
   async send(message: string, params?: Params): Promise<void> {
     const config = this.config;
     if (!config) {
-      throw new Error('service not initialized');
+      throw new Error("service not initialized");
     }
 
     const apiURL = buildURL(config);
@@ -40,7 +42,7 @@ export class RocketchatService extends Standard implements Service {
     // the success/error handling instead of relying on ApiError.
     let res: Response;
     try {
-      res = await this.client.request('POST', apiURL, {
+      res = await this.client.request("POST", apiURL, {
         body: JSON.stringify(payload),
         contentType: ContentType,
       });
@@ -60,7 +62,7 @@ export class RocketchatService extends Standard implements Service {
 
 // buildURL builds the webhook URL, preserving host:port when a port is set.
 export function buildURL(config: Config): string {
-  if (config.port !== '') {
+  if (config.port !== "") {
     return `https://${config.host}:${config.port}/hooks/${config.tokenA}/${config.tokenB}`;
   }
   return `https://${config.host}/hooks/${config.tokenA}/${config.tokenB}`;

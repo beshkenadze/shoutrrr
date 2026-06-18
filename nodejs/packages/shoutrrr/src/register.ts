@@ -7,28 +7,27 @@
  * which statically maps every scheme to its service at package init.
  */
 
-import { registerService, type ServiceFactory } from '@shoutrrr/core';
-
-import { descriptor as bark } from '@shoutrrr/bark';
-import { descriptor as discord } from '@shoutrrr/discord';
-import { descriptor as generic } from '@shoutrrr/generic';
-import { descriptor as googlechat } from '@shoutrrr/googlechat';
-import { descriptor as gotify } from '@shoutrrr/gotify';
-import { descriptor as ifttt } from '@shoutrrr/ifttt';
-import { descriptor as join } from '@shoutrrr/join';
-import { descriptor as logger } from '@shoutrrr/logger';
-import { descriptor as matrix } from '@shoutrrr/matrix';
-import { descriptor as mattermost } from '@shoutrrr/mattermost';
-import { descriptor as ntfy } from '@shoutrrr/ntfy';
-import { descriptor as opsgenie } from '@shoutrrr/opsgenie';
-import { descriptor as pushbullet } from '@shoutrrr/pushbullet';
-import { descriptor as pushover } from '@shoutrrr/pushover';
-import { descriptor as rocketchat } from '@shoutrrr/rocketchat';
-import { descriptor as slack } from '@shoutrrr/slack';
-import { descriptor as smtp } from '@shoutrrr/smtp';
-import { descriptor as teams } from '@shoutrrr/teams';
-import { descriptor as telegram } from '@shoutrrr/telegram';
-import { descriptor as zulip } from '@shoutrrr/zulip';
+import { descriptor as bark } from "@shoutrrr/bark";
+import { registerService, type ServiceFactory } from "@shoutrrr/core";
+import { descriptor as discord } from "@shoutrrr/discord";
+import { descriptor as generic } from "@shoutrrr/generic";
+import { descriptor as googlechat } from "@shoutrrr/googlechat";
+import { descriptor as gotify } from "@shoutrrr/gotify";
+import { descriptor as ifttt } from "@shoutrrr/ifttt";
+import { descriptor as join } from "@shoutrrr/join";
+import { descriptor as logger } from "@shoutrrr/logger";
+import { descriptor as matrix } from "@shoutrrr/matrix";
+import { descriptor as mattermost } from "@shoutrrr/mattermost";
+import { descriptor as ntfy } from "@shoutrrr/ntfy";
+import { descriptor as opsgenie } from "@shoutrrr/opsgenie";
+import { descriptor as pushbullet } from "@shoutrrr/pushbullet";
+import { descriptor as pushover } from "@shoutrrr/pushover";
+import { descriptor as rocketchat } from "@shoutrrr/rocketchat";
+import { descriptor as slack } from "@shoutrrr/slack";
+import { descriptor as smtp } from "@shoutrrr/smtp";
+import { descriptor as teams } from "@shoutrrr/teams";
+import { descriptor as telegram } from "@shoutrrr/telegram";
+import { descriptor as zulip } from "@shoutrrr/zulip";
 
 /**
  * A service descriptor as exported by each `@shoutrrr/<service>` package.

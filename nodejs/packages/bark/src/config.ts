@@ -3,10 +3,10 @@ import {
   type FieldSchema,
   PropKeyResolver,
   type ServiceConfig,
-} from '@shoutrrr/core';
+} from "@shoutrrr/core";
 
 /** Scheme is the identifying part of this service's configuration URL. */
-export const Scheme = 'bark';
+export const Scheme = "bark";
 
 /**
  * forceQuery mirrors Go's url.URL.ForceQuery: the serialized URL always ends
@@ -14,13 +14,16 @@ export const Scheme = 'bark';
  * drops the trailing "?", so toString()/href are patched to re-add it.
  */
 function forceQuery(url: URL): URL {
-  if (url.search !== '') {
+  if (url.search !== "") {
     return url;
   }
   const base = url.toString();
   const withQuery = (): string => `${base}?`;
-  Object.defineProperty(url, 'toString', { value: withQuery, enumerable: false });
-  Object.defineProperty(url, 'href', { get: withQuery, enumerable: false });
+  Object.defineProperty(url, "toString", {
+    value: withQuery,
+    enumerable: false,
+  });
+  Object.defineProperty(url, "href", { get: withQuery, enumerable: false });
   return url;
 }
 
@@ -30,33 +33,87 @@ function forceQuery(url: URL): URL {
  * deviceKey are derived from URL parts.
  */
 const FIELDS: FieldSchema[] = [
-  { name: 'title', type: 'string', key: ['title'], default: '', desc: 'Notification title, optionally set by the sender' },
-  { name: 'scheme', type: 'string', key: ['scheme'], default: 'https', desc: 'Server protocol, http or https' },
-  { name: 'sound', type: 'string', key: ['sound'], default: '', desc: 'Value from https://github.com/Finb/Bark/tree/master/Sounds' },
-  { name: 'badge', type: 'int', key: ['badge'], default: '0', desc: 'The number displayed next to App icon' },
-  { name: 'icon', type: 'string', key: ['icon'], default: '', desc: 'An url to the icon, available only on iOS 15 or later' },
-  { name: 'group', type: 'string', key: ['group'], default: '', desc: 'The group of the notification' },
-  { name: 'url', type: 'string', key: ['url'], default: '', desc: 'Url that will jump when click notification' },
-  { name: 'category', type: 'string', key: ['category'], default: '', desc: 'Reserved field, no use yet' },
-  { name: 'copy', type: 'string', key: ['copy'], default: '', desc: 'The value to be copied' },
+  {
+    name: "title",
+    type: "string",
+    key: ["title"],
+    default: "",
+    desc: "Notification title, optionally set by the sender",
+  },
+  {
+    name: "scheme",
+    type: "string",
+    key: ["scheme"],
+    default: "https",
+    desc: "Server protocol, http or https",
+  },
+  {
+    name: "sound",
+    type: "string",
+    key: ["sound"],
+    default: "",
+    desc: "Value from https://github.com/Finb/Bark/tree/master/Sounds",
+  },
+  {
+    name: "badge",
+    type: "int",
+    key: ["badge"],
+    default: "0",
+    desc: "The number displayed next to App icon",
+  },
+  {
+    name: "icon",
+    type: "string",
+    key: ["icon"],
+    default: "",
+    desc: "An url to the icon, available only on iOS 15 or later",
+  },
+  {
+    name: "group",
+    type: "string",
+    key: ["group"],
+    default: "",
+    desc: "The group of the notification",
+  },
+  {
+    name: "url",
+    type: "string",
+    key: ["url"],
+    default: "",
+    desc: "Url that will jump when click notification",
+  },
+  {
+    name: "category",
+    type: "string",
+    key: ["category"],
+    default: "",
+    desc: "Reserved field, no use yet",
+  },
+  {
+    name: "copy",
+    type: "string",
+    key: ["copy"],
+    default: "",
+    desc: "The value to be copied",
+  },
 ];
 
 /**
  * Config for the bark service, mirroring Go's bark.Config (bark_config.go).
  */
 export class Config extends EnumlessConfig implements ServiceConfig {
-  title = '';
-  host = '';
-  path = '/';
-  deviceKey = '';
-  scheme = 'https';
-  sound = '';
+  title = "";
+  host = "";
+  path = "/";
+  deviceKey = "";
+  scheme = "https";
+  sound = "";
   badge = 0;
-  icon = '';
-  group = '';
-  url = '';
-  category = '';
-  copy = '';
+  icon = "";
+  group = "";
+  url = "";
+  category = "";
+  copy = "";
 
   static fields(): FieldSchema[] {
     return FIELDS;
@@ -69,10 +126,10 @@ export class Config extends EnumlessConfig implements ServiceConfig {
    */
   getAPIURL(endpoint: string): string {
     let path = this.path;
-    if (!path.startsWith('/')) {
+    if (!path.startsWith("/")) {
       path = `/${path}`;
     }
-    if (!path.endsWith('/')) {
+    if (!path.endsWith("/")) {
       path = `${path}/`;
     }
     path += endpoint;
@@ -108,7 +165,7 @@ export class Config extends EnumlessConfig implements ServiceConfig {
   getURLWithResolver(resolver: PropKeyResolver): URL {
     const url = new URL(`${Scheme}://${this.host}`);
     // Device key is carried as the password; the user component stays empty.
-    url.username = '';
+    url.username = "";
     url.password = encodeURIComponent(this.deviceKey);
     url.pathname = this.path;
     resolver.bindToURL(url);

@@ -1,19 +1,20 @@
-import { EnumlessConfig } from '@shoutrrr/core';
-import type { EnumFormatter, ServiceConfig } from '@shoutrrr/core';
+import type { EnumFormatter, ServiceConfig } from "@shoutrrr/core";
+import { EnumlessConfig } from "@shoutrrr/core";
 
 // Scheme is the identifying part of this service's configuration URL.
-export const Scheme = 'rocketchat';
+export const Scheme = "rocketchat";
 // NotEnoughArguments provided in the service URL.
-export const NotEnoughArguments = 'the apiURL does not include enough arguments';
+export const NotEnoughArguments =
+  "the apiURL does not include enough arguments";
 
 // Config for the rocket.chat service, faithful port of rocketchat_config.go.
 export class Config extends EnumlessConfig implements ServiceConfig {
-  userName = '';
-  host = '';
-  port = '';
-  tokenA = '';
-  tokenB = '';
-  channel = '';
+  userName = "";
+  host = "";
+  port = "";
+  tokenA = "";
+  tokenB = "";
+  channel = "";
 
   override enums(): Record<string, EnumFormatter> {
     return {};
@@ -22,7 +23,7 @@ export class Config extends EnumlessConfig implements ServiceConfig {
   // getURL returns a URL representation of the current field values. The port,
   // when present, is preserved (Go fix #495).
   getURL(): URL {
-    const host = this.port !== '' ? `${this.host}:${this.port}` : this.host;
+    const host = this.port !== "" ? `${this.host}:${this.port}` : this.host;
     const url = new URL(`${Scheme}://${host}`);
     url.pathname = `/${this.tokenA}/${this.tokenB}`;
     return url;
@@ -33,7 +34,7 @@ export class Config extends EnumlessConfig implements ServiceConfig {
     const userName = decodeURIComponent(serviceURL.username);
     const host = serviceURL.hostname;
 
-    const path = serviceURL.pathname.split('/');
+    const path = serviceURL.pathname.split("/");
     if (path.length < 3) {
       throw new Error(NotEnoughArguments);
     }
@@ -41,18 +42,18 @@ export class Config extends EnumlessConfig implements ServiceConfig {
     this.port = serviceURL.port;
     this.userName = userName;
     this.host = host;
-    this.tokenA = path[1] ?? '';
-    this.tokenB = path[2] ?? '';
+    this.tokenA = path[1] ?? "";
+    this.tokenB = path[2] ?? "";
 
     if (path.length > 3) {
       // WHATWG URL keeps the leading '#' in `hash`; Go's Fragment strips it.
-      const fragment = serviceURL.hash.startsWith('#')
+      const fragment = serviceURL.hash.startsWith("#")
         ? serviceURL.hash.slice(1)
         : serviceURL.hash;
-      const path3 = path[3] ?? '';
-      if (fragment !== '') {
+      const path3 = path[3] ?? "";
+      if (fragment !== "") {
         this.channel = `#${fragment}`;
-      } else if (!path3.startsWith('@')) {
+      } else if (!path3.startsWith("@")) {
         this.channel = `#${path3}`;
       } else {
         this.channel = path3;

@@ -1,6 +1,6 @@
 // Port of pkg/services/slack/slack_json.go
 
-import type { Config } from './config.js';
+import type { Config } from "./config.js";
 
 const iconURLPattern = /https?:\/\//;
 
@@ -42,7 +42,7 @@ export interface APIResponse {
 
 /** MessagePayload used within the Slack service. */
 export class MessagePayload {
-  text = '';
+  text = "";
   username?: string;
   blocks?: Block[];
   attachments?: Attachment[];
@@ -53,10 +53,10 @@ export class MessagePayload {
 
   /** SetIcon sets icon_url or icon_emoji based on whether the input looks like a URL. */
   setIcon(icon: string): void {
-    this.icon_url = '';
-    this.icon_emoji = '';
+    this.icon_url = "";
+    this.icon_emoji = "";
 
-    if (icon !== '') {
+    if (icon !== "") {
       if (iconURLPattern.test(icon)) {
         this.icon_url = icon;
       } else {
@@ -118,9 +118,12 @@ function serializeAttachment(att: Attachment): Record<string, unknown> {
 }
 
 /** CreateJSONPayload compatible with the slack post message API. */
-export function createJSONPayload(config: Config, message: string): MessagePayload {
+export function createJSONPayload(
+  config: Config,
+  message: string,
+): MessagePayload {
   const atts: Attachment[] = [];
-  const lines = message.split('\n');
+  const lines = message.split("\n");
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i] as string;
@@ -135,7 +138,7 @@ export function createJSONPayload(config: Config, message: string): MessagePaylo
   }
 
   // Remove last attachment if empty.
-  if ((atts[atts.length - 1] as Attachment).text === '') {
+  if ((atts[atts.length - 1] as Attachment).text === "") {
     atts.pop();
   }
 
@@ -147,7 +150,7 @@ export function createJSONPayload(config: Config, message: string): MessagePaylo
 
   payload.setIcon(config.icon);
 
-  if (config.channel !== 'webhook') {
+  if (config.channel !== "webhook") {
     payload.channel = config.channel;
   }
 

@@ -1,13 +1,13 @@
 // Port of telegram_client.go
-import { ApiError, JsonClient } from '@shoutrrr/core';
+import { ApiError, JsonClient } from "@shoutrrr/core";
 import type {
   ErrorResponse,
   Message,
   MessageResponse,
   SendMessagePayload,
-} from './payload.js';
+} from "./payload.js";
 
-const API_FORMAT = 'https://api.telegram.org/bot%s/%s';
+const API_FORMAT = "https://api.telegram.org/bot%s/%s";
 
 /** Client for the Telegram Bot API. */
 export class Client {
@@ -20,7 +20,7 @@ export class Client {
   }
 
   private apiURL(endpoint: string): string {
-    return API_FORMAT.replace('%s', this.token).replace('%s', endpoint);
+    return API_FORMAT.replace("%s", this.token).replace("%s", endpoint);
   }
 
   /** SendMessage sends the specified message and returns the created Message. */
@@ -28,7 +28,7 @@ export class Client {
     let response: MessageResponse | undefined;
     try {
       response = await this.json.post<MessageResponse>(
-        this.apiURL('sendMessage'),
+        this.apiURL("sendMessage"),
         message,
       );
     } catch (err) {
@@ -59,14 +59,14 @@ export function getResponseError(err: unknown): Error {
   if (err instanceof Error) {
     return err;
   }
-  return new Error('unknown telegram API error');
+  return new Error("unknown telegram API error");
 }
 
 function isErrorResponse(body: unknown): body is ErrorResponse {
   return (
-    typeof body === 'object' &&
+    typeof body === "object" &&
     body !== null &&
-    'description' in body &&
-    typeof (body as { description: unknown }).description === 'string'
+    "description" in body &&
+    typeof (body as { description: unknown }).description === "string"
   );
 }

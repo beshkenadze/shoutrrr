@@ -1,20 +1,20 @@
-import type { Service } from '@shoutrrr/core';
-import { SlackService } from './slack.js';
+import type { Service } from "@shoutrrr/core";
+import { SlackService } from "./slack.js";
 
-export { SlackService } from './slack.js';
-export { Config, createConfigFromURL, Scheme, configSchema } from './config.js';
-export { Token, parseToken } from './token.js';
+export type { Logger, Params, Service } from "@shoutrrr/core";
+export { Config, configSchema, createConfigFromURL, Scheme } from "./config.js";
+export { ErrorInvalidToken, ErrorMismatchedTokenSeparators } from "./errors.js";
 export {
-  MessagePayload,
-  createJSONPayload,
+  type APIResponse,
   type Attachment,
   type Block,
   type BlockText,
+  createJSONPayload,
   type LegacyField,
-  type APIResponse,
-} from './payload.js';
-export { ErrorInvalidToken, ErrorMismatchedTokenSeparators } from './errors.js';
-export type { Params, Logger, Service } from '@shoutrrr/core';
+  MessagePayload,
+} from "./payload.js";
+export { SlackService } from "./slack.js";
+export { parseToken, Token } from "./token.js";
 
 export interface ServiceDescriptor {
   schemes: string[];
@@ -22,6 +22,6 @@ export interface ServiceDescriptor {
 }
 
 export const descriptor: ServiceDescriptor = {
-  schemes: ['slack'],
+  schemes: ["slack"],
   factory: (): Service => new SlackService(),
 };

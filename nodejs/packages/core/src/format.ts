@@ -8,32 +8,32 @@
  * serializes it back. This mirrors the Go SetConfigField/GetConfigFieldString
  * behaviour (bool => "Yes"/"No", enum via EnumFormatter, comma-split slices).
  */
-import type { EnumFormatter } from './types.ts';
+import type { EnumFormatter } from "./types.ts";
 
 /** Which part of a URL a field maps to (besides query params). */
 export type URLPart =
-  | 'user'
-  | 'pass'
-  | 'host'
-  | 'port'
-  | 'path'
-  | 'path1'
-  | 'path2'
-  | 'path3'
-  | 'path4'
-  | 'query';
+  | "user"
+  | "pass"
+  | "host"
+  | "port"
+  | "path"
+  | "path1"
+  | "path2"
+  | "path3"
+  | "path4"
+  | "query";
 
 /** Supported config field value types. */
 export type FieldType =
-  | 'string'
-  | 'int'
-  | 'uint'
-  | 'bool'
-  | 'float'
-  | 'enum'
-  | 'string[]'
-  | 'prop'
-  | 'prop[]';
+  | "string"
+  | "int"
+  | "uint"
+  | "bool"
+  | "float"
+  | "enum"
+  | "string[]"
+  | "prop"
+  | "prop[]";
 
 /** Schema describing a single config field. */
 export interface FieldSchema {
@@ -69,15 +69,15 @@ export function parseBool(
   defaultValue: boolean,
 ): { value: boolean; ok: boolean } {
   switch (value.toLowerCase()) {
-    case 'true':
-    case '1':
-    case 'yes':
-    case 'y':
+    case "true":
+    case "1":
+    case "yes":
+    case "y":
       return { value: true, ok: true };
-    case 'false':
-    case '0':
-    case 'no':
-    case 'n':
+    case "false":
+    case "0":
+    case "no":
+    case "n":
       return { value: false, ok: true };
     default:
       return { value: defaultValue, ok: false };
@@ -86,7 +86,7 @@ export function parseBool(
 
 /** Serializes a bool as "Yes"/"No". */
 export function printBool(value: boolean): string {
-  return value ? 'Yes' : 'No';
+  return value ? "Yes" : "No";
 }
 
 /**
@@ -97,7 +97,7 @@ export function printBool(value: boolean): string {
  */
 export function goQueryEscape(s: string): string {
   const bytes = new TextEncoder().encode(s);
-  let out = '';
+  let out = "";
   for (const b of bytes) {
     if (
       (b >= 0x41 && b <= 0x5a) || // A-Z
@@ -110,16 +110,16 @@ export function goQueryEscape(s: string): string {
     ) {
       out += String.fromCharCode(b);
     } else if (b === 0x20) {
-      out += '+';
+      out += "+";
     } else {
-      out += `%${b.toString(16).toUpperCase().padStart(2, '0')}`;
+      out += `%${b.toString(16).toUpperCase().padStart(2, "0")}`;
     }
   }
   return out;
 }
 
 function fieldType(f: FieldSchema): FieldType {
-  return f.type ?? 'string';
+  return f.type ?? "string";
 }
 
 function parseIntStrict(
@@ -130,23 +130,23 @@ function parseIntStrict(
 ): number {
   // Mirror Go's strconv.ParseInt/ParseUint: reject trailing garbage and empty.
   const trimmed = raw.trim();
-  if (trimmed === '') {
+  if (trimmed === "") {
     throw new Error(`invalid number: ${JSON.stringify(raw)}`);
   }
-  const negative = signed && trimmed.startsWith('-');
+  const negative = signed && trimmed.startsWith("-");
   let body = negative ? trimmed.slice(1) : trimmed;
   // Mirror Go's util.StripNumberPrefix: a 0x/0b/0o prefix selects the radix
   // (e.g. discord's `0x50d9ff` colors), overriding the schema base.
   let effectiveBase = base;
-  if (body.length > 2 && body[0] === '0') {
+  if (body.length > 2 && body[0] === "0") {
     const prefix = body[1]?.toLowerCase();
-    if (prefix === 'x') {
+    if (prefix === "x") {
       effectiveBase = 16;
       body = body.slice(2);
-    } else if (prefix === 'b') {
+    } else if (prefix === "b") {
       effectiveBase = 2;
       body = body.slice(2);
-    } else if (prefix === 'o') {
+    } else if (prefix === "o") {
       effectiveBase = 8;
       body = body.slice(2);
     }
@@ -160,7 +160,9 @@ function parseIntStrict(
           ? /^[01]+$/
           : /^[0-9]+$/;
   if (!re.test(body)) {
-    throw new Error(`invalid number ${JSON.stringify(raw)} for base ${effectiveBase}`);
+    throw new Error(
+      `invalid number ${JSON.stringify(raw)} for base ${effectiveBase}`,
+    );
   }
   const n = parseInt(body, effectiveBase);
   if (Number.isNaN(n)) {
@@ -177,7 +179,7 @@ function parseIntStrict(
       : [0, 2 ** bits - 1];
     if (value < min || value > max) {
       throw new Error(
-        `value ${value} out of range for ${signed ? 'int' : 'uint'}${bits}`,
+        `value ${value} out of range for ${signed ? "int" : "uint"}${bits}`,
       );
     }
   }
@@ -197,11 +199,11 @@ export function setConfigField(
   const type = fieldType(f);
 
   switch (type) {
-    case 'string':
-    case 'prop':
+    case "string":
+    case "prop":
       config[f.name] = raw;
       return;
-    case 'enum': {
+    case "enum": {
       const enumName = f.enumName ?? f.name;
       const formatter = enums[enumName];
       if (!formatter) {
@@ -209,36 +211,36 @@ export function setConfigField(
       }
       const value = formatter.parse(raw);
       if (value === -1) {
-        throw new Error(`not a one of ${formatter.names().join(', ')}`);
+        throw new Error(`not a one of ${formatter.names().join(", ")}`);
       }
       config[f.name] = value;
       return;
     }
-    case 'int':
+    case "int":
       config[f.name] = parseIntStrict(raw, f.base ?? 10, true, f.bits);
       return;
-    case 'uint':
+    case "uint":
       config[f.name] = parseIntStrict(raw, f.base ?? 10, false, f.bits);
       return;
-    case 'float': {
+    case "float": {
       const n = Number(raw);
-      if (Number.isNaN(n) || raw.trim() === '') {
+      if (Number.isNaN(n) || raw.trim() === "") {
         throw new Error(`invalid float: ${JSON.stringify(raw)}`);
       }
       config[f.name] = n;
       return;
     }
-    case 'bool': {
+    case "bool": {
       const { value, ok } = parseBool(raw, false);
       if (!ok) {
-        throw new Error('accepted values are 1, true, yes or 0, false, no');
+        throw new Error("accepted values are 1, true, yes or 0, false, no");
       }
       config[f.name] = value;
       return;
     }
-    case 'string[]':
-    case 'prop[]':
-      config[f.name] = raw.split(f.separator ?? ',');
+    case "string[]":
+    case "prop[]":
+      config[f.name] = raw.split(f.separator ?? ",");
       return;
     default: {
       const exhaustive: never = type;
@@ -260,10 +262,10 @@ export function getConfigFieldString(
   const value = config[f.name];
 
   switch (type) {
-    case 'string':
-    case 'prop':
-      return value === undefined || value === null ? '' : String(value);
-    case 'enum': {
+    case "string":
+    case "prop":
+      return value === undefined || value === null ? "" : String(value);
+    case "enum": {
       const enumName = f.enumName ?? f.name;
       const formatter = enums[enumName];
       if (!formatter) {
@@ -271,20 +273,20 @@ export function getConfigFieldString(
       }
       return formatter.print(Number(value ?? 0));
     }
-    case 'int':
-    case 'uint': {
+    case "int":
+    case "uint": {
       const base = f.base ?? 10;
       const n = Number(value ?? 0);
       return n.toString(base);
     }
-    case 'float':
+    case "float":
       return String(Number(value ?? 0));
-    case 'bool':
+    case "bool":
       return printBool(Boolean(value));
-    case 'string[]':
-    case 'prop[]': {
+    case "string[]":
+    case "prop[]": {
       const arr = Array.isArray(value) ? (value as string[]) : [];
-      return arr.join(f.separator ?? ',');
+      return arr.join(f.separator ?? ",");
     }
     default: {
       const exhaustive: never = type;

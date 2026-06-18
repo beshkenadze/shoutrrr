@@ -1,16 +1,17 @@
 // Matrix client-server API payload types and constants — port of Go matrix_api.go.
 
-export const apiLogin = '/_matrix/client/r0/login';
-export const apiRoomJoin = '/_matrix/client/r0/join/%s';
-export const apiSendMessage = '/_matrix/client/r0/rooms/%s/send/m.room.message/%s';
-export const apiJoinedRooms = '/_matrix/client/r0/joined_rooms';
+export const apiLogin = "/_matrix/client/r0/login";
+export const apiRoomJoin = "/_matrix/client/r0/join/%s";
+export const apiSendMessage =
+  "/_matrix/client/r0/rooms/%s/send/m.room.message/%s";
+export const apiJoinedRooms = "/_matrix/client/r0/joined_rooms";
 
-export const contentType = 'application/json';
-export const accessTokenKey = 'access_token';
+export const contentType = "application/json";
+export const accessTokenKey = "access_token";
 
-export const msgTypeText = 'm.text';
-export const flowLoginPassword = 'm.login.password';
-export const idTypeUser = 'm.id.user';
+export const msgTypeText = "m.text";
+export const flowLoginPassword = "m.login.password";
+export const idTypeUser = "m.id.user";
 
 export interface Flow {
   type: string;

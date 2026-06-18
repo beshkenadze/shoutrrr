@@ -1,7 +1,8 @@
 // Port of Go pkg/services/logger/logger.go
-import { Config } from './config.js';
-import { Standard } from '@shoutrrr/core';
-import type { Logger, Params, Service } from '@shoutrrr/core';
+
+import type { Logger, Params, Service } from "@shoutrrr/core";
+import { Standard } from "@shoutrrr/core";
+import { Config } from "./config.js";
 
 /**
  * Minimal faithful subset of Go's text/template for the logger service.
@@ -20,14 +21,17 @@ class MessageTemplate {
   }
 
   execute(data: Params): string {
-    return this.body.replace(/\{\{\s*\.([A-Za-z_][A-Za-z0-9_]*)\s*\}\}/g, (_match, key: string) => {
-      // Only own string keys substitute; absent keys render Go's "<no value>"
-      // sentinel rather than leaking inherited Object.prototype members.
-      if (!Object.prototype.hasOwnProperty.call(data, key)) {
-        return '<no value>';
-      }
-      return String(data[key]);
-    });
+    return this.body.replace(
+      /\{\{\s*\.([A-Za-z_][A-Za-z0-9_]*)\s*\}\}/g,
+      (_match, key: string) => {
+        // Only own string keys substitute; absent keys render Go's "<no value>"
+        // sentinel rather than leaking inherited Object.prototype members.
+        if (!Object.hasOwn(data, key)) {
+          return "<no value>";
+        }
+        return String(data[key]);
+      },
+    );
   }
 }
 
@@ -55,7 +59,7 @@ export class LoggerService extends Standard implements Service {
 
   /** SetTemplateString registers the named template (only "message" is used). */
   setTemplateString(id: string, body: string): void {
-    if (id !== 'message') {
+    if (id !== "message") {
       throw new Error(`unknown template id "${id}"`);
     }
     this.template = new MessageTemplate(body);
@@ -74,6 +78,6 @@ export class LoggerService extends Standard implements Service {
     if (this.template) {
       msg = this.template.execute(data);
     }
-    this.logf('%s', msg);
+    this.logf("%s", msg);
   }
 }

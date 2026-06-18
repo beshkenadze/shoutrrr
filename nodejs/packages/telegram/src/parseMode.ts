@@ -1,5 +1,5 @@
 // Port of telegram_parsemode.go
-import { createEnumFormatter, type EnumFormatter } from '@shoutrrr/core';
+import { createEnumFormatter, type EnumFormatter } from "@shoutrrr/core";
 
 /** ParseMode enum values, matching the Go iota ordering. */
 export const ParseMode = {
@@ -13,10 +13,10 @@ export type ParseModeValue = (typeof ParseMode)[keyof typeof ParseMode];
 
 /** Enum formatter for ParseMode (None is index 0, no empty offset). */
 export const parseModeEnum: EnumFormatter = createEnumFormatter([
-  'None',
-  'Markdown',
-  'HTML',
-  'MarkdownV2',
+  "None",
+  "Markdown",
+  "HTML",
+  "MarkdownV2",
 ]);
 
 /** parseModeString returns the string representation of a ParseMode value. */

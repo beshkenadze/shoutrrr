@@ -4,7 +4,7 @@
  * `Standard` provides the logging surface every service embeds; `EnumlessConfig`
  * is the base config for services that have no enum fields.
  */
-import type { EnumFormatter, Logger } from './types.ts';
+import type { EnumFormatter, Logger } from "./types.ts";
 
 /** Base class providing logger plumbing for services. */
 export class Standard implements Logger {

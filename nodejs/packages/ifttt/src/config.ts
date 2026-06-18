@@ -1,6 +1,6 @@
 import {
-  EnumlessConfig,
   type EnumFormatter,
+  EnumlessConfig,
   type FieldSchema,
   PropKeyResolver,
   type ServiceConfig,

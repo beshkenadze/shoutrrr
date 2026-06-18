@@ -16,8 +16,8 @@ export interface Section {
 }
 
 export interface MessageCard {
-  '@type': string;
-  '@context': string;
+  "@type": string;
+  "@context": string;
   markdown: boolean;
   text?: string;
   title?: string;
@@ -26,8 +26,8 @@ export interface MessageCard {
   themeColor?: string;
 }
 
-const CARD_TYPE = 'MessageCard';
-const CONTEXT = 'http://schema.org/extensions';
+const CARD_TYPE = "MessageCard";
+const CONTEXT = "http://schema.org/extensions";
 
 /**
  * buildPayload assembles a MessageCard from a message, title and color, mirroring
@@ -40,13 +40,13 @@ export function buildPayload(
   color: string,
 ): MessageCard {
   const sections: Section[] = message
-    .split('\n')
+    .split("\n")
     .map((line) => ({ text: line, startGroup: false }));
 
   // Teams needs a summary for the webhook; use the title or the (truncated) first line.
   let summary = title;
-  if (summary === '' && sections.length > 0) {
-    summary = sections[0]!.text ?? '';
+  if (summary === "" && sections.length > 0) {
+    summary = sections[0]!.text ?? "";
     if (summary.length > 20) {
       // Go: summary[:21] keeps the first 21 bytes.
       summary = summary.slice(0, 21);
@@ -54,19 +54,19 @@ export function buildPayload(
   }
 
   const card: MessageCard = {
-    '@type': CARD_TYPE,
-    '@context': CONTEXT,
+    "@type": CARD_TYPE,
+    "@context": CONTEXT,
     markdown: true,
   };
 
   // Faithful to Go json omitempty: only emit non-empty optional fields.
-  if (title !== '') {
+  if (title !== "") {
     card.title = title;
   }
-  if (color !== '') {
+  if (color !== "") {
     card.themeColor = color;
   }
-  if (summary !== '') {
+  if (summary !== "") {
     card.summary = summary;
   }
   if (sections.length > 0) {

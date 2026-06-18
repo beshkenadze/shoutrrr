@@ -1,14 +1,14 @@
 // Port of Go pkg/services/gotify/gotify_config.go.
 import {
-  EnumlessConfig,
-  PropKeyResolver,
   type EnumFormatter,
+  EnumlessConfig,
   type FieldSchema,
+  PropKeyResolver,
   type ServiceConfig,
-} from '@shoutrrr/core';
+} from "@shoutrrr/core";
 
 /** Scheme is the identifying part of this service's configuration URL. */
-export const SCHEME = 'gotify';
+export const SCHEME = "gotify";
 
 const enumless = new EnumlessConfig();
 
@@ -16,21 +16,44 @@ const enumless = new EnumlessConfig();
 export class Config implements ServiceConfig {
   [key: string]: unknown;
 
-  Token = '';
-  Host = '';
-  Path = '';
+  Token = "";
+  Host = "";
+  Path = "";
   Priority = 0;
-  Title = 'Shoutrrr notification';
+  Title = "Shoutrrr notification";
   DisableTLS = false;
 
   /** Schema describes the keyed (query) fields used by the PropKeyResolver. */
   static readonly schema: FieldSchema[] = [
-    { name: 'Token', type: 'string', urlParts: ['path2'], required: true, desc: 'Application token' },
-    { name: 'Host', type: 'string', urlParts: ['host', 'port'], required: true, desc: 'Server hostname (and optionally port)' },
-    { name: 'Path', type: 'string', urlParts: ['path1'], desc: 'Server subpath' },
-    { name: 'Priority', type: 'int', key: ['priority'], default: '0' },
-    { name: 'Title', type: 'string', key: ['title'], default: 'Shoutrrr notification', title: true },
-    { name: 'DisableTLS', type: 'bool', key: ['disabletls'], default: 'No' },
+    {
+      name: "Token",
+      type: "string",
+      urlParts: ["path2"],
+      required: true,
+      desc: "Application token",
+    },
+    {
+      name: "Host",
+      type: "string",
+      urlParts: ["host", "port"],
+      required: true,
+      desc: "Server hostname (and optionally port)",
+    },
+    {
+      name: "Path",
+      type: "string",
+      urlParts: ["path1"],
+      desc: "Server subpath",
+    },
+    { name: "Priority", type: "int", key: ["priority"], default: "0" },
+    {
+      name: "Title",
+      type: "string",
+      key: ["title"],
+      default: "Shoutrrr notification",
+      title: true,
+    },
+    { name: "DisableTLS", type: "bool", key: ["disabletls"], default: "No" },
   ];
 
   enums(): Record<string, EnumFormatter> {
@@ -56,7 +79,7 @@ export class Config implements ServiceConfig {
     // RawQuery: format.BuildQuery(resolver). buildQuery() is query-only — using
     // bindToURL() here would also rewrite the host/path URL parts.
     const path = this.Path + this.Token;
-    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+    const normalizedPath = path.startsWith("/") ? path : `/${path}`;
     const url = new URL(`${SCHEME}://${this.Host}${normalizedPath}`);
     url.search = resolver.buildQuery();
     return url;
@@ -68,13 +91,13 @@ export class Config implements ServiceConfig {
     // would throw URIError on a stray '%' and would turn an encoded '%2F' into a
     // real '/', corrupting the token/path split on lastIndexOf('/').
     let path = url.pathname;
-    if (path.length > 0 && path[path.length - 1] === '/') {
+    if (path.length > 0 && path[path.length - 1] === "/") {
       path = path.slice(0, -1);
     }
-    const tokenIndex = path.lastIndexOf('/') + 1;
+    const tokenIndex = path.lastIndexOf("/") + 1;
 
     this.Path = path.slice(0, tokenIndex);
-    if (this.Path === '/') {
+    if (this.Path === "/") {
       this.Path = this.Path.slice(1);
     }
 

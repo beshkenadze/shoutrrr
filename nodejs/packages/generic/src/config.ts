@@ -2,42 +2,62 @@ import {
   EnumlessConfig,
   type FieldSchema,
   PropKeyResolver,
-} from '@shoutrrr/core';
+} from "@shoutrrr/core";
 import {
   buildQueryWithCustomFields,
   setConfigPropsFromQuery,
-} from './customFields.ts';
+} from "./customFields.ts";
 import {
   appendCustomQueryValues,
   stripCustomQueryValues,
-} from './customQuery.ts';
+} from "./customQuery.ts";
 
 /** Scheme is the identifying part of this service's configuration URL. */
-export const Scheme = 'generic';
+export const Scheme = "generic";
 /** DefaultWebhookScheme is the scheme used for webhook URLs unless overridden. */
-export const DefaultWebhookScheme = 'https';
+export const DefaultWebhookScheme = "https";
 
 /** Internal placeholder scheme used to parse URLs as "non-special" so empty paths are preserved (Go semantics). */
-const PLACEHOLDER_SCHEME = 'shoutrrrx';
+const PLACEHOLDER_SCHEME = "shoutrrrx";
 
 /**
  * Field schema for the generic Config, ported from the Go struct tags in generic_config.go.
  * Property `name` matches the Config property; `key` is the URL query key.
  */
 export const configSchema: FieldSchema[] = [
-  { name: 'contentType', key: ['contenttype'], default: 'application/json', desc: 'The value of the Content-Type header' },
-  { name: 'disableTLS', key: ['disabletls'], type: 'bool', default: 'No' },
-  { name: 'template', key: ['template'], default: '', desc: 'The template used for creating the request payload' },
-  { name: 'title', key: ['title'], default: '' },
-  { name: 'titleKey', key: ['titlekey'], default: 'title', desc: 'The key that will be used for the title value' },
-  { name: 'messageKey', key: ['messagekey'], default: 'message', desc: 'The key that will be used for the message value' },
-  { name: 'requestMethod', key: ['method'], default: 'POST' },
+  {
+    name: "contentType",
+    key: ["contenttype"],
+    default: "application/json",
+    desc: "The value of the Content-Type header",
+  },
+  { name: "disableTLS", key: ["disabletls"], type: "bool", default: "No" },
+  {
+    name: "template",
+    key: ["template"],
+    default: "",
+    desc: "The template used for creating the request payload",
+  },
+  { name: "title", key: ["title"], default: "" },
+  {
+    name: "titleKey",
+    key: ["titlekey"],
+    default: "title",
+    desc: "The key that will be used for the title value",
+  },
+  {
+    name: "messageKey",
+    key: ["messagekey"],
+    default: "message",
+    desc: "The key that will be used for the message value",
+  },
+  { name: "requestMethod", key: ["method"], default: "POST" },
 ];
 
 /** Splits a raw URL string into its scheme and a non-special WHATWG URL of the remainder. */
 function parseURLPreservingPath(raw: string): { scheme: string; url: URL } {
-  const match = raw.match(/^([a-zA-Z][a-zA-Z0-9+.\-]*):/);
-  const scheme = match ? (match[1] as string) : '';
+  const match = raw.match(/^([a-zA-Z][a-zA-Z0-9+.-]*):/);
+  const scheme = match ? (match[1] as string) : "";
   const rest = raw.slice(scheme.length + 1);
   return { scheme, url: new URL(`${PLACEHOLDER_SCHEME}:${rest}`) };
 }
@@ -51,7 +71,7 @@ function buildURLString(base: URL, scheme: string, rawQuery: string): string {
     if (base.password) {
       out += `:${base.password}`;
     }
-    out += '@';
+    out += "@";
   }
   out += base.host;
   out += base.pathname;
@@ -70,13 +90,13 @@ export class Config extends EnumlessConfig {
   extraData: Record<string, string> = {};
 
   // Prop fields (defaults applied via PropKeyResolver.setDefaultProps).
-  contentType = 'application/json';
+  contentType = "application/json";
   disableTLS = false;
-  template = '';
-  title = '';
-  titleKey = 'title';
-  messageKey = 'message';
-  requestMethod = 'POST';
+  template = "";
+  title = "";
+  titleKey = "title";
+  messageKey = "message";
+  requestMethod = "POST";
 
   constructor() {
     super();
@@ -85,8 +105,12 @@ export class Config extends EnumlessConfig {
 
   /** WebhookURL returns the upstream URL string, applying disableTLS to pick http/https. */
   webhookURLString(): string {
-    const scheme = this.disableTLS ? 'http' : DefaultWebhookScheme;
-    return buildURLString(this.webhookURL, scheme, this.webhookURL.searchParams.toString());
+    const scheme = this.disableTLS ? "http" : DefaultWebhookScheme;
+    return buildURLString(
+      this.webhookURL,
+      scheme,
+      this.webhookURL.searchParams.toString(),
+    );
   }
 
   /** getURL returns the `generic://` service URL representation of the current config. */
@@ -100,7 +124,9 @@ export class Config extends EnumlessConfig {
     const serviceQuery = new URLSearchParams(this.webhookURL.searchParams);
     buildQueryWithCustomFields(resolver, serviceQuery);
     appendCustomQueryValues(serviceQuery, this.headers, this.extraData);
-    return new URL(buildURLString(this.webhookURL, Scheme, serviceQuery.toString()));
+    return new URL(
+      buildURLString(this.webhookURL, Scheme, serviceQuery.toString()),
+    );
   }
 
   /** setURL updates the config from a `generic://` service URL. */
@@ -130,10 +156,13 @@ export function defaultConfig(): { config: Config; pkr: PropKeyResolver } {
 }
 
 /** ConfigFromWebhookURL creates a new Config from a parsed (raw) webhook URL string. */
-export function configFromWebhookURL(rawWebhookURL: string): { config: Config; pkr: PropKeyResolver } {
+export function configFromWebhookURL(rawWebhookURL: string): {
+  config: Config;
+  pkr: PropKeyResolver;
+} {
   const { config, pkr } = defaultConfig();
   const { scheme, url } = parseURLPreservingPath(rawWebhookURL);
   config.webhookURL = url;
-  config.disableTLS = scheme === 'http';
+  config.disableTLS = scheme === "http";
   return { config, pkr };
 }

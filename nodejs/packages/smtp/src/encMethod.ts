@@ -1,6 +1,7 @@
 // Port of Go pkg/services/smtp/smtp_encmethod.go.
-import { createEnumFormatter } from '@shoutrrr/core';
-import type { EnumFormatter } from '@shoutrrr/core';
+
+import type { EnumFormatter } from "@shoutrrr/core";
+import { createEnumFormatter } from "@shoutrrr/core";
 
 /** Encryption is the transport encryption method (Go: encMethod). */
 export enum Encryption {
@@ -16,10 +17,10 @@ export enum Encryption {
 
 /** encryptionFormatter is the EnumFormatter for Encryption (Go: EncMethods.Enum). */
 export const encryptionFormatter: EnumFormatter = createEnumFormatter([
-  'None',
-  'ExplicitTLS',
-  'ImplicitTLS',
-  'Auto',
+  "None",
+  "ExplicitTLS",
+  "ImplicitTLS",
+  "Auto",
 ]);
 
 /** ImplicitTLSPort is the de facto standard SMTPS port (Go: ImplicitTLSPort). */

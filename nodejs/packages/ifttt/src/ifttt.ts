@@ -13,11 +13,8 @@ import { createJSONToSend } from "./payload.js";
 /** Default IFTTT Maker webhook base. Overridable for testing. */
 export const DEFAULT_API_BASE = "https://maker.ifttt.com";
 
-const apiURLFormat = (
-  base: string,
-  event: string,
-  webHookID: string,
-): string => `${base}/trigger/${event}/with/key/${webHookID}`;
+const apiURLFormat = (base: string, event: string, webHookID: string): string =>
+  `${base}/trigger/${event}/with/key/${webHookID}`;
 
 /**
  * IftttService sends notifications to an IFTTT Maker webhook, ported from

@@ -9,26 +9,25 @@
  *   await send('slack://token-a/token-b/token-c@channel', 'Hello');
  */
 
-import './register.ts';
-
-export { registerAll } from './register.ts';
-
-export {
-  send,
-  createSender,
-  newSender,
-  setLogger,
-  ServiceRouter,
-  registerService,
-  getServiceFactory,
-  extractScheme,
-} from '@shoutrrr/core';
+import "./register.ts";
 
 export type {
-  Params,
+  EnumFormatter,
   Logger,
+  Params,
   Service,
   ServiceConfig,
   ServiceFactory,
-  EnumFormatter,
-} from '@shoutrrr/core';
+} from "@shoutrrr/core";
+
+export {
+  createSender,
+  extractScheme,
+  getServiceFactory,
+  newSender,
+  registerService,
+  ServiceRouter,
+  send,
+  setLogger,
+} from "@shoutrrr/core";
+export { registerAll } from "./register.ts";

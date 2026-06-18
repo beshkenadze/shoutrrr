@@ -1,18 +1,18 @@
-import type { EnumFormatter, ServiceConfig } from '@shoutrrr/core';
-import { type FieldSchema, PropKeyResolver } from '@shoutrrr/core';
+import type { EnumFormatter, ServiceConfig } from "@shoutrrr/core";
+import { type FieldSchema, PropKeyResolver } from "@shoutrrr/core";
 
 /** Scheme is the identifying part of this service's configuration URL. */
-export const Scheme = 'pushover';
+export const Scheme = "pushover";
 
 /** ErrorMessage values for config URL validation failures. */
-export const UserMissing = 'user missing from config URL';
-export const TokenMissing = 'token missing from config URL';
+export const UserMissing = "user missing from config URL";
+export const TokenMissing = "token missing from config URL";
 
 /** Field schema describing the query props (devices, priority, title). */
 export const fieldSchema: FieldSchema[] = [
-  { name: 'devices', type: 'string[]', key: ['devices'], separator: ',' },
-  { name: 'priority', type: 'int', key: ['priority'], default: '0', bits: 8 },
-  { name: 'title', type: 'string', key: ['title'] },
+  { name: "devices", type: "string[]", key: ["devices"], separator: "," },
+  { name: "priority", type: "int", key: ["priority"], default: "0", bits: 8 },
+  { name: "title", type: "string", key: ["title"] },
 ];
 
 /**
@@ -21,11 +21,11 @@ export const fieldSchema: FieldSchema[] = [
  * devices/priority/title are query props.
  */
 export class Config implements ServiceConfig {
-  token = '';
-  user = '';
+  token = "";
+  user = "";
   devices: string[] = [];
   priority = 0;
-  title = '';
+  title = "";
 
   enums(): Record<string, EnumFormatter> {
     return {};
@@ -45,7 +45,7 @@ export class Config implements ServiceConfig {
     // survive WHATWG URL parsing (mutating .password after .host drops it).
     const auth = `Token:${encodeURIComponent(this.token)}@${this.user}`;
     // Go sets ForceQuery: true, so the URL always carries a trailing "?".
-    const search = query === '' ? '?' : `?${query}`;
+    const search = query === "" ? "?" : `?${query}`;
     return new URL(`${Scheme}://${auth}${search}`);
   }
 

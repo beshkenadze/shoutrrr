@@ -1,18 +1,18 @@
 // @shoutrrr/pushbullet — public entry point.
 
-import { PushbulletService } from './pushbullet.js';
+import { PushbulletService } from "./pushbullet.js";
 
-export { PushbulletService } from './pushbullet.js';
-export { Config, SCHEME, DEFAULT_TITLE } from './config.js';
+export { Config, DEFAULT_TITLE, SCHEME } from "./config.js";
 export {
-  type PushRequest,
-  type PushResponse,
   type ErrorResponse,
   newNotePush,
+  type PushRequest,
+  type PushResponse,
   setTarget,
-} from './payload.js';
+} from "./payload.js";
+export { PushbulletService } from "./pushbullet.js";
 
 export const descriptor = {
-  schemes: ['pushbullet'] as const,
+  schemes: ["pushbullet"] as const,
   factory: (): PushbulletService => new PushbulletService(),
 };

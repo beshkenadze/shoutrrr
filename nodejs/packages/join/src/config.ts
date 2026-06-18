@@ -1,47 +1,47 @@
 // Port of Go pkg/services/join/join_config.go + join.go (error messages).
 
 import {
-  PropKeyResolver,
   type EnumFormatter,
   type FieldSchema,
+  PropKeyResolver,
   type ServiceConfig,
-} from '@shoutrrr/core';
+} from "@shoutrrr/core";
 
 /** Scheme is the identifying part of this service's configuration URL. */
-export const Scheme = 'join';
+export const Scheme = "join";
 
 /** ErrorMessage values for the join service. */
-export const APIKeyMissing = 'API key missing from config URL';
-export const DevicesMissing = 'devices missing from config URL';
+export const APIKeyMissing = "API key missing from config URL";
+export const DevicesMissing = "devices missing from config URL";
 
 /** Field schema mirroring the Go struct tags on join.Config. */
 export const fields: FieldSchema[] = [
   {
-    name: 'devices',
-    type: 'string[]',
-    key: ['devices'],
-    desc: 'Comma separated list of device IDs',
+    name: "devices",
+    type: "string[]",
+    key: ["devices"],
+    desc: "Comma separated list of device IDs",
   },
   {
-    name: 'title',
-    type: 'string',
-    key: ['title'],
-    desc: 'If set creates a notification',
+    name: "title",
+    type: "string",
+    key: ["title"],
+    desc: "If set creates a notification",
   },
   {
-    name: 'icon',
-    type: 'string',
-    key: ['icon'],
-    desc: 'Icon URL',
+    name: "icon",
+    type: "string",
+    key: ["icon"],
+    desc: "Icon URL",
   },
 ];
 
 /** Config for the Join notification service. */
 export class Config implements ServiceConfig {
-  apiKey = '';
+  apiKey = "";
   devices: string[] = [];
-  title = '';
-  icon = '';
+  title = "";
+  icon = "";
 
   // The schema is immutable, so one resolver per Config is reused for both
   // serialization and parsing rather than rebuilt on every call.

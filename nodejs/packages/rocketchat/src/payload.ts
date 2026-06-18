@@ -1,5 +1,5 @@
-import type { Config } from './config.js';
-import type { Params } from '@shoutrrr/core';
+import type { Params } from "@shoutrrr/core";
+import type { Config } from "./config.js";
 
 // RocketchatPayload is the JSON body accepted by the Rocket.Chat webhook API.
 // username/channel are omitted when empty (Go `omitempty`).
@@ -29,10 +29,10 @@ export function createJSONPayload(
   }
 
   const payload: RocketchatPayload = { text: message };
-  if (userName !== '') {
+  if (userName !== "") {
     payload.username = userName;
   }
-  if (channel !== '') {
+  if (channel !== "") {
     payload.channel = channel;
   }
   return payload;

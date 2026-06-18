@@ -1,15 +1,15 @@
-import { EnumlessConfig } from '@shoutrrr/core';
+import { EnumlessConfig } from "@shoutrrr/core";
 
 /** Identifying scheme for the Zulip service configuration URL. */
-export const Scheme = 'zulip';
+export const Scheme = "zulip";
 
 /** Error messages for config/URL parsing, mirroring Go's zulip_errors.go. */
 export const ErrorMessage = {
-  MissingAPIKey: 'missing API key',
-  MissingHost: 'missing Zulip host',
-  MissingBotMail: 'missing Bot mail address',
+  MissingAPIKey: "missing API key",
+  MissingHost: "missing Zulip host",
+  MissingBotMail: "missing Bot mail address",
   /** Format string: max length, actual length. */
-  TopicTooLong: 'topic exceeds max length (%d characters): was %d characters',
+  TopicTooLong: "topic exceeds max length (%d characters): was %d characters",
 } as const;
 
 /**
@@ -23,11 +23,11 @@ export const ErrorMessage = {
  * - topic   -> query "topic" (alias "title")
  */
 export class Config extends EnumlessConfig {
-  botMail = '';
-  botKey = '';
-  host = '';
-  stream = '';
-  topic = '';
+  botMail = "";
+  botKey = "";
+  host = "";
+  stream = "";
+  topic = "";
 
   /** Builds a URL representation of the current field values. */
   getURL(): URL {
@@ -41,15 +41,15 @@ export class Config extends EnumlessConfig {
    */
   toURLString(): string {
     const query = new URLSearchParams();
-    if (this.stream !== '') {
-      query.set('stream', this.stream);
+    if (this.stream !== "") {
+      query.set("stream", this.stream);
     }
-    if (this.topic !== '') {
-      query.set('topic', this.topic);
+    if (this.topic !== "") {
+      query.set("topic", this.topic);
     }
     const auth = `${encodeURIComponent(this.botMail)}:${encodeURIComponent(this.botKey)}`;
     const queryString = query.toString();
-    const suffix = queryString === '' ? '' : `?${queryString}`;
+    const suffix = queryString === "" ? "" : `?${queryString}`;
     // host may already include a non-standard port (e.g. "example.com:8443").
     return `${Scheme}://${auth}@${this.host}${suffix}`;
   }
@@ -77,18 +77,18 @@ export class Config extends EnumlessConfig {
  */
 function hasPasswordComponent(url: URL): boolean {
   const raw = url.href;
-  const afterScheme = raw.slice(raw.indexOf('://') + 3);
-  const atIndex = afterScheme.indexOf('@');
+  const afterScheme = raw.slice(raw.indexOf("://") + 3);
+  const atIndex = afterScheme.indexOf("@");
   if (atIndex === -1) {
     return false;
   }
   const userinfo = afterScheme.slice(0, atIndex);
-  return userinfo.includes(':');
+  return userinfo.includes(":");
 }
 
 function setConfigFromURL(config: Config, url: URL): void {
   config.botMail = decodeURIComponent(url.username);
-  if (config.botMail === '') {
+  if (config.botMail === "") {
     throw new Error(ErrorMessage.MissingBotMail);
   }
 
@@ -98,12 +98,12 @@ function setConfigFromURL(config: Config, url: URL): void {
   config.botKey = decodeURIComponent(url.password);
 
   config.host = url.host;
-  if (config.host === '') {
+  if (config.host === "") {
     throw new Error(ErrorMessage.MissingHost);
   }
 
-  config.stream = url.searchParams.get('stream') ?? '';
-  config.topic = url.searchParams.get('topic') ?? '';
+  config.stream = url.searchParams.get("stream") ?? "";
+  config.topic = url.searchParams.get("topic") ?? "";
 }
 
 /** Builds a Config from a service URL (mirrors Go's CreateConfigFromURL). */

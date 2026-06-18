@@ -1,15 +1,12 @@
 // Port of Go pkg/services/smtp/smtp_config.go.
-import { AuthType, authTypeFormatter } from './authType.js';
-import { Encryption, encryptionFormatter } from './encMethod.js';
-import { PropKeyResolver } from '@shoutrrr/core';
-import type {
-  EnumFormatter,
-  FieldSchema,
-  ServiceConfig,
-} from '@shoutrrr/core';
+
+import type { EnumFormatter, FieldSchema, ServiceConfig } from "@shoutrrr/core";
+import { PropKeyResolver } from "@shoutrrr/core";
+import { AuthType, authTypeFormatter } from "./authType.js";
+import { Encryption, encryptionFormatter } from "./encMethod.js";
 
 /** Scheme is the identifying part of this service's configuration URL. */
-export const Scheme = 'smtp';
+export const Scheme = "smtp";
 
 /** Default port when none is given in the URL (Go: Config.Port default). */
 export const DefaultPort = 25;
@@ -20,36 +17,112 @@ export const DefaultPort = 25;
  * username/password/host/port live in URL parts, not the query string.
  */
 export const smtpFieldSchema: FieldSchema[] = [
-  { name: 'host', type: 'string', urlParts: ['host'], desc: 'SMTP server hostname or IP address' },
-  { name: 'username', type: 'string', urlParts: ['user'], default: '', desc: 'SMTP server username' },
-  { name: 'password', type: 'string', urlParts: ['pass'], default: '', desc: 'SMTP server password or hash (for OAuth2)' },
-  { name: 'port', type: 'uint', urlParts: ['port'], default: '25', desc: 'SMTP server port, common ones are 25, 465, 587 or 2525' },
-  { name: 'fromAddress', type: 'string', key: ['fromaddress', 'from'], desc: 'E-mail address that the mail are sent from' },
-  { name: 'fromName', type: 'string', key: ['fromname'], desc: 'Name of the sender' },
-  { name: 'toAddresses', type: 'string[]', key: ['toaddresses', 'to'], desc: 'List of recipient e-mails separated by "," (comma)' },
-  { name: 'subject', type: 'string', key: ['subject', 'title'], default: 'Shoutrrr Notification', desc: 'The subject of the sent mail' },
-  { name: 'auth', type: 'enum', key: ['auth'], default: 'Unknown', enumName: 'auth', desc: 'SMTP authentication method' },
-  { name: 'encryption', type: 'enum', key: ['encryption'], default: 'Auto', enumName: 'encryption', desc: 'Encryption method' },
-  { name: 'useStartTLS', type: 'bool', key: ['usestarttls', 'starttls'], default: 'Yes', desc: 'Whether to use StartTLS encryption' },
-  { name: 'useHTML', type: 'bool', key: ['usehtml'], default: 'No', desc: 'Whether the message being sent is in HTML' },
-  { name: 'clientHost', type: 'string', key: ['clienthost'], default: 'localhost', desc: 'The client host name sent to the SMTP server during HELLO phase. If set to "auto" it will use the OS hostname' },
+  {
+    name: "host",
+    type: "string",
+    urlParts: ["host"],
+    desc: "SMTP server hostname or IP address",
+  },
+  {
+    name: "username",
+    type: "string",
+    urlParts: ["user"],
+    default: "",
+    desc: "SMTP server username",
+  },
+  {
+    name: "password",
+    type: "string",
+    urlParts: ["pass"],
+    default: "",
+    desc: "SMTP server password or hash (for OAuth2)",
+  },
+  {
+    name: "port",
+    type: "uint",
+    urlParts: ["port"],
+    default: "25",
+    desc: "SMTP server port, common ones are 25, 465, 587 or 2525",
+  },
+  {
+    name: "fromAddress",
+    type: "string",
+    key: ["fromaddress", "from"],
+    desc: "E-mail address that the mail are sent from",
+  },
+  {
+    name: "fromName",
+    type: "string",
+    key: ["fromname"],
+    desc: "Name of the sender",
+  },
+  {
+    name: "toAddresses",
+    type: "string[]",
+    key: ["toaddresses", "to"],
+    desc: 'List of recipient e-mails separated by "," (comma)',
+  },
+  {
+    name: "subject",
+    type: "string",
+    key: ["subject", "title"],
+    default: "Shoutrrr Notification",
+    desc: "The subject of the sent mail",
+  },
+  {
+    name: "auth",
+    type: "enum",
+    key: ["auth"],
+    default: "Unknown",
+    enumName: "auth",
+    desc: "SMTP authentication method",
+  },
+  {
+    name: "encryption",
+    type: "enum",
+    key: ["encryption"],
+    default: "Auto",
+    enumName: "encryption",
+    desc: "Encryption method",
+  },
+  {
+    name: "useStartTLS",
+    type: "bool",
+    key: ["usestarttls", "starttls"],
+    default: "Yes",
+    desc: "Whether to use StartTLS encryption",
+  },
+  {
+    name: "useHTML",
+    type: "bool",
+    key: ["usehtml"],
+    default: "No",
+    desc: "Whether the message being sent is in HTML",
+  },
+  {
+    name: "clientHost",
+    type: "string",
+    key: ["clienthost"],
+    default: "localhost",
+    desc: 'The client host name sent to the SMTP server during HELLO phase. If set to "auto" it will use the OS hostname',
+  },
 ];
 
 /** Config is the configuration needed to send e-mail notifications over SMTP. */
 export class Config implements ServiceConfig {
-  host = '';
-  username = '';
-  password = '';
+  host = "";
+  username = "";
+  password = "";
   port: number = DefaultPort;
-  fromAddress = '';
-  fromName = '';
+  fromAddress = "";
+  fromName = "";
   toAddresses: string[] = [];
-  subject = '';
+  subject = "";
   auth: AuthType = AuthType.Unknown;
   encryption: Encryption = Encryption.Auto;
   useStartTLS = true;
   useHTML = false;
-  clientHost = 'localhost';
+  clientHost = "localhost";
 
   /** enums returns the EnumFormatters keyed by enumName (Go: Config.Enums). */
   enums(): Record<string, EnumFormatter> {
@@ -81,7 +154,7 @@ export class Config implements ServiceConfig {
     // username/password while the host is empty.
     url.hostname = this.host;
     url.port = String(this.port);
-    url.pathname = '/';
+    url.pathname = "/";
 
     // Userinfo: only emit when set (Go: util.URLUserPassword).
     if (this.password.length > 0) {
@@ -101,7 +174,7 @@ export class Config implements ServiceConfig {
     this.password = decodeURIComponent(url.password);
     this.host = url.hostname;
 
-    if (url.port !== '') {
+    if (url.port !== "") {
       const port = Number.parseInt(url.port, 10);
       if (!Number.isNaN(port)) {
         this.port = port;
@@ -126,10 +199,10 @@ export class Config implements ServiceConfig {
     }
 
     if (this.fromAddress.length < 1) {
-      throw new Error('fromAddress missing from config URL');
+      throw new Error("fromAddress missing from config URL");
     }
     if (this.toAddresses.length < 1) {
-      throw new Error('toAddress missing from config URL');
+      throw new Error("toAddress missing from config URL");
     }
   }
 
@@ -154,8 +227,8 @@ export class Config implements ServiceConfig {
 
   /** fixEmailTags restores '+' chars parsed as spaces in e-mail addresses (Go: FixEmailTags). */
   fixEmailTags(): void {
-    this.fromAddress = this.fromAddress.replaceAll(' ', '+');
-    this.toAddresses = this.toAddresses.map((adr) => adr.replaceAll(' ', '+'));
+    this.fromAddress = this.fromAddress.replaceAll(" ", "+");
+    this.toAddresses = this.toAddresses.map((adr) => adr.replaceAll(" ", "+"));
   }
 
   /** updateFromParams applies send-time param overrides (Go: PropKeyResolver.UpdateConfigFromParams). */

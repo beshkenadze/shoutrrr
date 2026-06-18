@@ -1,6 +1,7 @@
 // Port of Go pkg/services/smtp/smtp_authtype.go.
-import { createEnumFormatter } from '@shoutrrr/core';
-import type { EnumFormatter } from '@shoutrrr/core';
+
+import type { EnumFormatter } from "@shoutrrr/core";
+import { createEnumFormatter } from "@shoutrrr/core";
 
 /** AuthType is the SMTP authentication method (Go: authType). */
 export enum AuthType {
@@ -13,9 +14,9 @@ export enum AuthType {
 
 /** authTypeFormatter is the EnumFormatter for AuthType (Go: AuthTypes.Enum). */
 export const authTypeFormatter: EnumFormatter = createEnumFormatter([
-  'None',
-  'Plain',
-  'CRAMMD5',
-  'Unknown',
-  'OAuth2',
+  "None",
+  "Plain",
+  "CRAMMD5",
+  "Unknown",
+  "OAuth2",
 ]);

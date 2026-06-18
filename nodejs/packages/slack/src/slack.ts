@@ -1,23 +1,23 @@
 // Port of pkg/services/slack/slack.go
 
-import type { Dispatcher } from 'undici';
+import type {
+  FetchLike,
+  Service as IService,
+  Logger,
+  Params,
+} from "@shoutrrr/core";
 import {
   ContentType,
   JsonClient,
   PropKeyResolver,
   Standard,
-} from '@shoutrrr/core';
-import type {
-  FetchLike,
-  Logger,
-  Params,
-  Service as IService,
-} from '@shoutrrr/core';
-import { Config, configSchema } from './config.js';
-import type { APIResponse, MessagePayload } from './payload.js';
-import { createJSONPayload } from './payload.js';
+} from "@shoutrrr/core";
+import type { Dispatcher } from "undici";
+import { Config, configSchema } from "./config.js";
+import type { APIResponse, MessagePayload } from "./payload.js";
+import { createJSONPayload } from "./payload.js";
 
-const apiPostMessage = 'https://slack.com/api/chat.postMessage';
+const apiPostMessage = "https://slack.com/api/chat.postMessage";
 
 /** Service sends notifications to a pre-configured channel or user. */
 export class SlackService implements IService {
@@ -75,48 +75,60 @@ export class SlackService implements IService {
     }
   }
 
-  private async sendAPI(config: Config, payload: MessagePayload): Promise<void> {
+  private async sendAPI(
+    config: Config,
+    payload: MessagePayload,
+  ): Promise<void> {
     const jsonClient = new JsonClient({
       ...(this.dispatcher ? { dispatcher: this.dispatcher } : {}),
       ...(this.fetchImpl ? { fetch: this.fetchImpl } : {}),
     });
     jsonClient.headers.Authorization = config.token.authorization();
 
-    const response = await jsonClient.post<APIResponse>(apiPostMessage, payload.toJSON());
+    const response = await jsonClient.post<APIResponse>(
+      apiPostMessage,
+      payload.toJSON(),
+    );
 
     if (!response.ok) {
       if (response.error) {
         throw new Error(`api response: ${response.error}`);
       }
-      throw new Error('unknown error');
+      throw new Error("unknown error");
     }
 
     if (response.warning) {
-      this.logger.logf('Slack API warning: %q', response.warning);
+      this.logger.logf("Slack API warning: %q", response.warning);
     }
   }
 
-  private async sendWebhook(config: Config, payload: MessagePayload): Promise<void> {
+  private async sendWebhook(
+    config: Config,
+    payload: MessagePayload,
+  ): Promise<void> {
     const url = config.token.webhookURL();
-    const doFetch: FetchLike = this.fetchImpl ?? ((input, init) => fetch(input, init));
+    const doFetch: FetchLike =
+      this.fetchImpl ?? ((input, init) => fetch(input, init));
 
     const res = await doFetch(url, {
-      method: 'POST',
-      headers: { 'content-type': ContentType },
+      method: "POST",
+      headers: { "content-type": ContentType },
       body: JSON.stringify(payload.toJSON()),
-      ...(this.dispatcher ? ({ dispatcher: this.dispatcher } as RequestInit) : {}),
+      ...(this.dispatcher
+        ? ({ dispatcher: this.dispatcher } as RequestInit)
+        : {}),
     });
 
     const response = await res.text();
 
     switch (response) {
-      case '':
+      case "":
         if (res.status !== 200) {
           throw new Error(`webhook status: ${res.status}`);
         }
         // Treat status 200 as no error regardless of actual content.
         return;
-      case 'ok':
+      case "ok":
         return;
       default:
         throw new Error(`webhook response: ${response}`);

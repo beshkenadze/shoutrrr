@@ -6,7 +6,7 @@
  * first real value is 1), `firstOffset` skips those leading placeholders in
  * `names()` while `print`/`parse` still operate over the full index space.
  */
-import type { EnumFormatter } from './types.ts';
+import type { EnumFormatter } from "./types.ts";
 
 /** EnumInvalid is the value returned by parse() when the input is unknown. */
 export const EnumInvalid = -1;
@@ -21,7 +21,7 @@ class EnumFormatterImpl implements EnumFormatter {
     this.aliases = aliases;
     let firstOffset = 0;
     for (let i = 0; i < names.length; i++) {
-      if (names[i] !== '') {
+      if (names[i] !== "") {
         firstOffset = i;
         break;
       }
@@ -37,7 +37,7 @@ class EnumFormatterImpl implements EnumFormatter {
   /** Returns the string for an enum int value, or "Invalid" when out of range. */
   print(e: number): string {
     if (e >= this._names.length || e < 0) {
-      return 'Invalid';
+      return "Invalid";
     }
     return this._names[e] as string;
   }
@@ -50,7 +50,7 @@ class EnumFormatterImpl implements EnumFormatter {
         return index;
       }
     }
-    if (Object.prototype.hasOwnProperty.call(this.aliases, s)) {
+    if (Object.hasOwn(this.aliases, s)) {
       return this.aliases[s] as number;
     }
     return EnumInvalid;

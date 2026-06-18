@@ -5,11 +5,11 @@
 // Access-Token header and JSON body — and that 200 resolves while errors reject.
 // This drives the real JsonClient and PushbulletService code paths end-to-end.
 
-import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 
-import { Config } from '../src/config.js';
-import { newNotePush, setTarget, type PushRequest } from '../src/payload.js';
-import { PushbulletService } from '../src/pushbullet.js';
+import { Config } from "../src/config.js";
+import { newNotePush, type PushRequest, setTarget } from "../src/payload.js";
+import { PushbulletService } from "../src/pushbullet.js";
 
 interface CapturedRequest {
   url: string;
@@ -35,21 +35,25 @@ afterEach(() => {
 });
 
 function installFetchMock(): void {
-  globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
-    const url = typeof input === 'string' ? input : input.toString();
+  globalThis.fetch = (async (
+    input: string | URL | Request,
+    init?: RequestInit,
+  ) => {
+    const url = typeof input === "string" ? input : input.toString();
     const headers: Record<string, string> = {};
     new Headers(init?.headers).forEach((value, key) => {
       // Header names are lower-cased by Headers; remap the ones we assert on.
-      if (key === 'access-token') headers['Access-Token'] = value;
-      else if (key === 'content-type') headers['Content-Type'] = value;
+      if (key === "access-token") headers["Access-Token"] = value;
+      else if (key === "content-type") headers["Content-Type"] = value;
       else headers[key] = value;
     });
     captured.push({
       url,
       opts: {
-        method: init?.method ?? 'GET',
+        method: init?.method ?? "GET",
         headers,
-        body: typeof init?.body === 'string' ? init.body : String(init?.body ?? ''),
+        body:
+          typeof init?.body === "string" ? init.body : String(init?.body ?? ""),
       },
     });
     return new Response(JSON.stringify(nextResponse.payload), {
@@ -58,62 +62,62 @@ function installFetchMock(): void {
   }) as typeof fetch;
 }
 
-const TOKEN = 'tokentokentokentokentokentokentoke'; // 34 chars
-const ENDPOINT = 'https://api.pushbullet.com/v2/pushes';
+const TOKEN = "tokentokentokentokentokentokentoke"; // 34 chars
+const ENDPOINT = "https://api.pushbullet.com/v2/pushes";
 
-describe('the pushbullet config', () => {
-  describe('generating a config object', () => {
-    it('should set token', () => {
+describe("the pushbullet config", () => {
+  describe("generating a config object", () => {
+    it("should set token", () => {
       const config = new Config();
       config.setURL(new URL(`pushbullet://${TOKEN}`));
       expect(config.token).toBe(TOKEN);
     });
 
-    it('should set the device from path', () => {
+    it("should set the device from path", () => {
       const config = new Config();
       config.setURL(new URL(`pushbullet://${TOKEN}/test`));
       expect(config.targets).toHaveLength(1);
-      expect(config.targets).toContain('test');
+      expect(config.targets).toContain("test");
     });
 
-    it('should set the channel from path', () => {
+    it("should set the channel from path", () => {
       const config = new Config();
       config.setURL(new URL(`pushbullet://${TOKEN}/foo#bar`));
       expect(config.targets).toHaveLength(2);
-      expect(config.targets).toContain('foo');
-      expect(config.targets).toContain('#bar');
+      expect(config.targets).toContain("foo");
+      expect(config.targets).toContain("#bar");
     });
 
-    it('should reject a token with the wrong size', () => {
+    it("should reject a token with the wrong size", () => {
       const config = new Config();
-      expect(() => config.setURL(new URL('pushbullet://tooshort'))).toThrow(
-        'token has incorrect size',
+      expect(() => config.setURL(new URL("pushbullet://tooshort"))).toThrow(
+        "token has incorrect size",
       );
     });
 
-    it('should reject an unknown query key', () => {
+    it("should reject an unknown query key", () => {
       const config = new Config();
       expect(() =>
         config.setURL(new URL(`pushbullet://${TOKEN}/dev?bogus=x`)),
-      ).toThrow('is not a valid config key');
+      ).toThrow("is not a valid config key");
     });
 
-    it('should read a mixed-case title query key', () => {
+    it("should read a mixed-case title query key", () => {
       const config = new Config();
       config.setURL(new URL(`pushbullet://${TOKEN}/dev?Title=Custom`));
-      expect(config.title).toBe('Custom');
+      expect(config.title).toBe("Custom");
     });
   });
 
-  describe('parsing the configuration URL', () => {
-    it('should be identical after de-/serialization', () => {
+  describe("parsing the configuration URL", () => {
+    it("should be identical after de-/serialization", () => {
       const testURL = `pushbullet://${TOKEN}/device?title=Great+News`;
       const config = new Config();
       config.setURL(new URL(testURL));
       expect(config.getURL().toString()).toBe(testURL);
     });
 
-    it('should omit the default title from the URL', () => {
+    it("should omit the default title from the URL", () => {
       const testURL = `pushbullet://${TOKEN}/device`;
       const config = new Config();
       config.setURL(new URL(testURL));
@@ -122,33 +126,33 @@ describe('the pushbullet config', () => {
   });
 });
 
-describe('building the payload', () => {
-  it('email target should only populate the email field', () => {
-    const push: PushRequest = newNotePush('', '');
-    setTarget(push, 'iam@email.com');
-    expect(push.email).toBe('iam@email.com');
-    expect(push.device_iden).toBe('');
-    expect(push.channel_tag).toBe('');
+describe("building the payload", () => {
+  it("email target should only populate the email field", () => {
+    const push: PushRequest = newNotePush("", "");
+    setTarget(push, "iam@email.com");
+    expect(push.email).toBe("iam@email.com");
+    expect(push.device_iden).toBe("");
+    expect(push.channel_tag).toBe("");
   });
 
-  it('channel target should only populate the channel field', () => {
-    const push: PushRequest = newNotePush('', '');
-    setTarget(push, '#channel');
-    expect(push.email).toBe('');
-    expect(push.device_iden).toBe('');
-    expect(push.channel_tag).toBe('channel');
+  it("channel target should only populate the channel field", () => {
+    const push: PushRequest = newNotePush("", "");
+    setTarget(push, "#channel");
+    expect(push.email).toBe("");
+    expect(push.device_iden).toBe("");
+    expect(push.channel_tag).toBe("channel");
   });
 
-  it('device target should only populate the device field', () => {
-    const push: PushRequest = newNotePush('', '');
-    setTarget(push, 'mydevice');
-    expect(push.email).toBe('');
-    expect(push.channel_tag).toBe('');
-    expect(push.device_iden).toBe('mydevice');
+  it("device target should only populate the device field", () => {
+    const push: PushRequest = newNotePush("", "");
+    setTarget(push, "mydevice");
+    expect(push.email).toBe("");
+    expect(push.channel_tag).toBe("");
+    expect(push.device_iden).toBe("mydevice");
   });
 });
 
-describe('sending the payload', () => {
+describe("sending the payload", () => {
   beforeEach(() => {
     captured.length = 0;
     nextResponse = { statusCode: 200, payload: {} };
@@ -161,73 +165,77 @@ describe('sending the payload', () => {
     return service;
   }
 
-  it('should POST to the pushes endpoint with the Access-Token header and JSON body', async () => {
+  it("should POST to the pushes endpoint with the Access-Token header and JSON body", async () => {
     const service = newService(`pushbullet://${TOKEN}/test`);
-    await service.send('Message');
+    await service.send("Message");
 
     expect(captured).toHaveLength(1);
     const req = captured[0];
     expect(req).toBeDefined();
-    if (!req) throw new Error('no request captured');
+    if (!req) throw new Error("no request captured");
     expect(req.url).toBe(ENDPOINT);
-    expect(req.opts.method).toBe('POST');
-    expect(req.opts.headers['Access-Token']).toBe(TOKEN);
-    expect(req.opts.headers['Content-Type']).toBe('application/json');
+    expect(req.opts.method).toBe("POST");
+    expect(req.opts.headers["Access-Token"]).toBe(TOKEN);
+    expect(req.opts.headers["Content-Type"]).toBe("application/json");
     expect(JSON.parse(req.opts.body)).toEqual({
-      type: 'note',
-      title: 'Shoutrrr notification',
-      body: 'Message',
-      device_iden: 'test',
-      email: '',
-      channel_tag: '',
+      type: "note",
+      title: "Shoutrrr notification",
+      body: "Message",
+      device_iden: "test",
+      email: "",
+      channel_tag: "",
     });
   });
 
-  it('should not report an error if the server accepts the payload', async () => {
+  it("should not report an error if the server accepts the payload", async () => {
     nextResponse = { statusCode: 200, payload: {} };
     const service = newService(`pushbullet://${TOKEN}/test`);
-    await expect(service.send('Message')).resolves.toBeUndefined();
+    await expect(service.send("Message")).resolves.toBeUndefined();
   });
 
-  it('should report an error if the server rejects the payload', async () => {
+  it("should report an error if the server rejects the payload", async () => {
     nextResponse = {
       statusCode: 401,
-      payload: { error: { cat: ':(', message: 'bad token', type: 'invalid_request' } },
+      payload: {
+        error: { cat: ":(", message: "bad token", type: "invalid_request" },
+      },
     };
     const service = newService(`pushbullet://${TOKEN}/test`);
-    await expect(service.send('Message')).rejects.toThrow('API error: bad token');
+    await expect(service.send("Message")).rejects.toThrow(
+      "API error: bad token",
+    );
   });
 
-  it('should send one request per target', async () => {
+  it("should send one request per target", async () => {
     const service = newService(`pushbullet://${TOKEN}/foo#bar`);
-    await service.send('Message');
+    await service.send("Message");
     expect(captured).toHaveLength(2);
     const first = captured[0];
     const second = captured[1];
-    if (!first || !second) throw new Error('expected two requests');
-    expect(JSON.parse(first.opts.body).device_iden).toBe('foo');
-    expect(JSON.parse(second.opts.body).channel_tag).toBe('bar');
+    if (!first || !second) throw new Error("expected two requests");
+    expect(JSON.parse(first.opts.body).device_iden).toBe("foo");
+    expect(JSON.parse(second.opts.body).channel_tag).toBe("bar");
   });
 
-  it('should override the title from params', async () => {
+  it("should override the title from params", async () => {
     const service = newService(`pushbullet://${TOKEN}/test`);
-    await service.send('Message', { title: 'Custom' });
+    await service.send("Message", { title: "Custom" });
     const req = captured[0];
-    if (!req) throw new Error('no request captured');
-    expect(JSON.parse(req.opts.body).title).toBe('Custom');
+    if (!req) throw new Error("no request captured");
+    expect(JSON.parse(req.opts.body).title).toBe("Custom");
   });
 
-  it('should reject an unknown param key before sending', async () => {
+  it("should reject an unknown param key before sending", async () => {
     const service = newService(`pushbullet://${TOKEN}/test`);
-    await expect(service.send('Message', { bogus: 'x' })).rejects.toThrow(
-      'is not a valid config key',
+    await expect(service.send("Message", { bogus: "x" })).rejects.toThrow(
+      "is not a valid config key",
     );
     expect(captured).toHaveLength(0);
   });
 
-  it('should report an API error even when the error body has no message', async () => {
+  it("should report an API error even when the error body has no message", async () => {
     nextResponse = { statusCode: 400, payload: {} };
     const service = newService(`pushbullet://${TOKEN}/test`);
-    await expect(service.send('Message')).rejects.toThrow('API error:');
+    await expect(service.send("Message")).rejects.toThrow("API error:");
   });
 });

@@ -1,8 +1,8 @@
-import { STATUS_CODES } from 'node:http';
-import { JsonClient, Standard } from '@shoutrrr/core';
-import type { Logger, Params, Service } from '@shoutrrr/core';
-import type { Dispatcher } from 'undici';
-import { Config, ErrorMessage } from './config.ts';
+import { STATUS_CODES } from "node:http";
+import type { Logger, Params, Service } from "@shoutrrr/core";
+import { JsonClient, Standard } from "@shoutrrr/core";
+import type { Dispatcher } from "undici";
+import { Config, ErrorMessage } from "./config.ts";
 
 const CONTENT_MAX_SIZE = 10000; // bytes
 const TOPIC_MAX_LENGTH = 60; // characters
@@ -34,11 +34,11 @@ export interface ZulipServiceOptions {
 /** Builds the Zulip messages payload, mirroring Go's CreatePayload. */
 function createPayload(config: Config, message: string): URLSearchParams {
   const form = new URLSearchParams();
-  form.set('type', 'stream');
-  form.set('to', config.stream);
-  form.set('content', message);
-  if (config.topic !== '') {
-    form.set('topic', config.topic);
+  form.set("type", "stream");
+  form.set("to", config.stream);
+  form.set("content", message);
+  if (config.topic !== "") {
+    form.set("topic", config.topic);
   }
   return form;
 }
@@ -86,7 +86,7 @@ export class ZulipService extends Standard implements Service {
       );
     }
 
-    const messageSize = Buffer.byteLength(message, 'utf8');
+    const messageSize = Buffer.byteLength(message, "utf8");
     if (messageSize > CONTENT_MAX_SIZE) {
       throw new Error(
         `message exceeds max size (${CONTENT_MAX_SIZE} bytes): was ${messageSize} bytes`,
@@ -100,7 +100,9 @@ export class ZulipService extends Standard implements Service {
     const origin = this.apiOrigin ?? `https://${config.host}`;
     const apiURL = `${origin}/api/v1/messages`;
     const payload = createPayload(config, message);
-    const token = Buffer.from(`${config.botMail}:${config.botKey}`).toString('base64');
+    const token = Buffer.from(`${config.botMail}:${config.botKey}`).toString(
+      "base64",
+    );
     const client = new JsonClient({ dispatcher: this.dispatcher });
 
     // Use the raw request escape hatch (not postForm) so transport reaches us as
@@ -108,9 +110,9 @@ export class ZulipService extends Standard implements Service {
     // ourselves — Zulip's API treats only HTTP 200 as success.
     let status: number;
     try {
-      const res = await client.request('POST', apiURL, {
+      const res = await client.request("POST", apiURL, {
         body: payload.toString(),
-        contentType: 'application/x-www-form-urlencoded',
+        contentType: "application/x-www-form-urlencoded",
         headers: { Authorization: `Basic ${token}` },
       });
       status = res.status;

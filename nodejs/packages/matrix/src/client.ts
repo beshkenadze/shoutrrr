@@ -1,13 +1,8 @@
 // Matrix API client — port of Go matrix_client.go.
-import type { Dispatcher } from 'undici';
-import { JsonClient, type Logger } from '@shoutrrr/core';
-import { escapePathSegment } from './urlpath.js';
+
+import { JsonClient, type Logger } from "@shoutrrr/core";
+import type { Dispatcher } from "undici";
 import {
-  accessTokenKey,
-  apiJoinedRooms,
-  apiLogin,
-  apiRoomJoin,
-  apiSendMessage,
   type ApiReqLogin,
   type ApiReqSend,
   type ApiResEvent,
@@ -15,10 +10,16 @@ import {
   type ApiResLogin,
   type ApiResLoginFlows,
   type ApiResRoom,
+  accessTokenKey,
+  apiJoinedRooms,
+  apiLogin,
+  apiRoomJoin,
+  apiSendMessage,
   flowLoginPassword,
   msgTypeText,
   newUserIdentifier,
-} from './payload.js';
+} from "./payload.js";
+import { escapePathSegment } from "./urlpath.js";
 
 export interface MatrixClientOptions {
   dispatcher?: Dispatcher;
@@ -34,7 +35,7 @@ const discardLogger: Logger = {
 export class MatrixClient {
   private readonly scheme: string;
   private readonly host: string;
-  private accessToken = '';
+  private accessToken = "";
   private txnID = 0;
   private readonly logger: Logger;
   private readonly json: JsonClient;
@@ -46,19 +47,19 @@ export class MatrixClient {
     options: MatrixClientOptions = {},
   ) {
     this.host = host;
-    this.scheme = disableTLS ? 'http' : 'https';
+    this.scheme = disableTLS ? "http" : "https";
     this.logger = logger ?? discardLogger;
     this.json = new JsonClient(
       options.dispatcher ? { dispatcher: options.dispatcher } : {},
     );
-    this.logger.logf('Using server: %s\n', `${this.scheme}://${this.host}`);
+    this.logger.logf("Using server: %s\n", `${this.scheme}://${this.host}`);
   }
 
   // url builds the full request URL for a (pre-escaped) path, appending the
   // access_token query param exactly as Go's url.URL does.
   private url(path: string): string {
     let result = `${this.scheme}://${this.host}${path}`;
-    if (this.accessToken !== '') {
+    if (this.accessToken !== "") {
       const query = new URLSearchParams();
       query.set(accessTokenKey, this.accessToken);
       result += `?${query.toString()}`;
@@ -89,7 +90,7 @@ export class MatrixClient {
     }
 
     throw new Error(
-      `none of the server login flows are supported: ${flows.join(', ')}`,
+      `none of the server login flows are supported: ${flows.join(", ")}`,
     );
   }
 
@@ -112,12 +113,12 @@ export class MatrixClient {
       throw new Error(`failed to log in: ${errMessage(err)}`);
     }
 
-    const accessToken = response?.access_token ?? '';
+    const accessToken = response?.access_token ?? "";
     this.accessToken = accessToken;
-    const tokenHint = accessToken.length > 3 ? accessToken.slice(0, 3) : '';
-    this.logf('AccessToken: %s...\n', tokenHint);
-    this.logf('HomeServer: %s\n', response?.home_server ?? '');
-    this.logf('User: %s\n', response?.user_id ?? '');
+    const tokenHint = accessToken.length > 3 ? accessToken.slice(0, 3) : "";
+    this.logf("AccessToken: %s...\n", tokenHint);
+    this.logf("HomeServer: %s\n", response?.home_server ?? "");
+    this.logf("User: %s\n", response?.user_id ?? "");
   }
 
   // sendMessage sends to the explicit rooms when provided, else to all joined rooms.
@@ -139,11 +140,13 @@ export class MatrixClient {
       this.logf("Sending message to '%s'...\n", room);
 
       let roomID = room;
-      if (!room.startsWith('!')) {
+      if (!room.startsWith("!")) {
         try {
           roomID = await this.joinRoom(room);
         } catch (err) {
-          errors.push(new Error(`error joining room ${room}: ${errMessage(err)}`));
+          errors.push(
+            new Error(`error joining room ${room}: ${errMessage(err)}`),
+          );
           continue;
         }
         if (room !== roomID) {
@@ -155,7 +158,9 @@ export class MatrixClient {
         await this.sendMessageToRoom(message, roomID);
       } catch (err) {
         errors.push(
-          new Error(`failed to send message to room '${roomID}': ${errMessage(err)}`),
+          new Error(
+            `failed to send message to room '${roomID}': ${errMessage(err)}`,
+          ),
         );
       }
     }
@@ -179,7 +184,9 @@ export class MatrixClient {
         await this.sendMessageToRoom(message, roomID);
       } catch (err) {
         errors.push(
-          new Error(`failed to send message to room '${roomID}': ${errMessage(err)}`),
+          new Error(
+            `failed to send message to room '${roomID}': ${errMessage(err)}`,
+          ),
         );
       }
     }
@@ -190,26 +197,31 @@ export class MatrixClient {
   private async joinRoom(room: string): Promise<string> {
     // Use a function replacer so '$' sequences in the escaped segment are not
     // treated as String.replace special patterns ($&, $$, $`, $').
-    const path = apiRoomJoin.replace('%s', () => escapePathSegment(room));
+    const path = apiRoomJoin.replace("%s", () => escapePathSegment(room));
     const resRoom = await this.json.post<ApiResRoom>(this.url(path), null);
-    if (!resRoom || typeof resRoom.room_id !== 'string') {
-      throw new Error('join response missing room_id');
+    if (!resRoom || typeof resRoom.room_id !== "string") {
+      throw new Error("join response missing room_id");
     }
     return resRoom.room_id;
   }
 
-  private async sendMessageToRoom(message: string, roomID: string): Promise<void> {
+  private async sendMessageToRoom(
+    message: string,
+    roomID: string,
+  ): Promise<void> {
     const roomSeg = escapePathSegment(roomID);
     const txnSeg = escapePathSegment(this.nextTransactionID());
     const path = apiSendMessage
-      .replace('%s', () => roomSeg)
-      .replace('%s', () => txnSeg);
+      .replace("%s", () => roomSeg)
+      .replace("%s", () => txnSeg);
     const req: ApiReqSend = { msgtype: msgTypeText, body: message };
     await this.json.put<ApiResEvent>(this.url(path), req);
   }
 
   private async getJoinedRooms(): Promise<string[]> {
-    const response = await this.json.get<ApiResJoinedRooms>(this.url(apiJoinedRooms));
+    const response = await this.json.get<ApiResJoinedRooms>(
+      this.url(apiJoinedRooms),
+    );
     return response?.joined_rooms ?? [];
   }
 

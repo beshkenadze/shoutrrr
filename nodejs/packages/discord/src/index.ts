@@ -2,9 +2,9 @@ import { DiscordService } from "./discord.js";
 
 export { Config, DISCORD_SCHEMA, SCHEME } from "./config.js";
 export {
-  DiscordService,
   createAPIURLFromConfig,
   createItemsFromPlain,
+  DiscordService,
 } from "./discord.js";
 export {
   createPayloadFromItems,

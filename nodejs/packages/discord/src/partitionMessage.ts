@@ -73,7 +73,10 @@ export function messageItemsFromLines(
   for (let line of lines) {
     const maxLen = limits.chunkSize;
 
-    if (items.length === maxCount || totalLength + maxLen > limits.totalChunkSize) {
+    if (
+      items.length === maxCount ||
+      totalLength + maxLen > limits.totalChunkSize
+    ) {
       batches.push(items);
       items = [];
     }

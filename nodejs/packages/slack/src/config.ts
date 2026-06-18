@@ -1,18 +1,11 @@
 // Port of pkg/services/slack/slack_config.go
 
-import {
-  EnumlessConfig,
-  PropKeyResolver,
-} from '@shoutrrr/core';
-import type {
-  EnumFormatter,
-  FieldSchema,
-  ServiceConfig,
-} from '@shoutrrr/core';
-import { Token } from './token.js';
+import type { EnumFormatter, FieldSchema, ServiceConfig } from "@shoutrrr/core";
+import { EnumlessConfig, PropKeyResolver } from "@shoutrrr/core";
+import { Token } from "./token.js";
 
 /** Scheme is the identifying part of this service's configuration URL. */
-export const Scheme = 'slack';
+export const Scheme = "slack";
 
 /**
  * FieldSchema for the slack Config. Mirrors the Go struct tags:
@@ -28,49 +21,49 @@ export const Scheme = 'slack';
  */
 export const configSchema: FieldSchema[] = [
   {
-    name: 'botName',
-    type: 'string',
-    key: ['botname', 'username'],
-    default: '',
-    desc: 'Bot name',
+    name: "botName",
+    type: "string",
+    key: ["botname", "username"],
+    default: "",
+    desc: "Bot name",
   },
   {
-    name: 'icon',
-    type: 'string',
-    key: ['icon', 'icon_emoji', 'icon_url'],
-    default: '',
-    desc: 'Use emoji or URL as icon (based on presence of http(s):// prefix)',
+    name: "icon",
+    type: "string",
+    key: ["icon", "icon_emoji", "icon_url"],
+    default: "",
+    desc: "Use emoji or URL as icon (based on presence of http(s):// prefix)",
   },
   {
-    name: 'token',
-    type: 'prop',
-    desc: 'API Bot token',
+    name: "token",
+    type: "prop",
+    desc: "API Bot token",
   },
   {
-    name: 'color',
-    type: 'string',
-    key: ['color'],
-    default: '',
-    desc: 'Message left-hand border color',
+    name: "color",
+    type: "string",
+    key: ["color"],
+    default: "",
+    desc: "Message left-hand border color",
   },
   {
-    name: 'title',
-    type: 'string',
-    key: ['title'],
-    default: '',
-    desc: 'Prepended text above the message',
+    name: "title",
+    type: "string",
+    key: ["title"],
+    default: "",
+    desc: "Prepended text above the message",
   },
   {
-    name: 'channel',
-    type: 'string',
-    desc: 'Channel to send messages to in Cxxxxxxxxxx format',
+    name: "channel",
+    type: "string",
+    desc: "Channel to send messages to in Cxxxxxxxxxx format",
   },
   {
-    name: 'threadTS',
-    type: 'string',
-    key: ['thread_ts'],
-    default: '',
-    desc: 'ts value of the parent message (to send message as reply in thread)',
+    name: "threadTS",
+    type: "string",
+    key: ["thread_ts"],
+    default: "",
+    desc: "ts value of the parent message (to send message as reply in thread)",
   },
 ];
 
@@ -78,13 +71,13 @@ export const configSchema: FieldSchema[] = [
 export class Config extends EnumlessConfig implements ServiceConfig {
   [key: string]: unknown;
 
-  botName = '';
-  icon = '';
+  botName = "";
+  icon = "";
   token: Token = new Token();
-  color = '';
-  title = '';
-  channel = '';
-  threadTS = '';
+  color = "";
+  title = "";
+  channel = "";
+  threadTS = "";
 
   override enums(): Record<string, EnumFormatter> {
     return {};
@@ -114,8 +107,9 @@ export class Config extends EnumlessConfig implements ServiceConfig {
     // one for this non-special scheme when userinfo is present). The token's
     // normalized prop value ("type:p1-p2-p3") is exactly its userinfo form.
     const userinfo = this.token.getPropValue();
-    const authority = userinfo !== '' ? `${userinfo}@${this.channel}` : this.channel;
-    const canonical = `${Scheme}://${authority}${query !== '' ? `?${query}` : ''}`;
+    const authority =
+      userinfo !== "" ? `${userinfo}@${this.channel}` : this.channel;
+    const canonical = `${Scheme}://${authority}${query !== "" ? `?${query}` : ""}`;
 
     return makeCanonicalURL(canonical);
   }
@@ -127,8 +121,9 @@ export class Config extends EnumlessConfig implements ServiceConfig {
     const path = serviceURL.pathname;
     if (path.length > 1) {
       // Reading legacy config URL format: slack://botname@HOST/PATH...
-      token = decodeURIComponent(serviceURL.hostname) + decodeURIComponent(path);
-      this.channel = 'webhook';
+      token =
+        decodeURIComponent(serviceURL.hostname) + decodeURIComponent(path);
+      this.channel = "webhook";
       this.botName = decodeURIComponent(serviceURL.username);
     } else {
       // New format: userinfo holds "type:p1-p2-p3".
@@ -155,12 +150,12 @@ export class Config extends EnumlessConfig implements ServiceConfig {
  */
 function makeCanonicalURL(canonical: string): URL {
   const url = new URL(canonical);
-  Object.defineProperty(url, 'href', {
+  Object.defineProperty(url, "href", {
     value: canonical,
     enumerable: true,
     configurable: true,
   });
-  Object.defineProperty(url, 'toString', {
+  Object.defineProperty(url, "toString", {
     value: () => canonical,
     enumerable: false,
     configurable: true,
@@ -172,10 +167,10 @@ function makeCanonicalURL(canonical: string): URL {
 function userInfoString(serviceURL: URL): string {
   const user = decodeURIComponent(serviceURL.username);
   const pass = decodeURIComponent(serviceURL.password);
-  if (user === '' && pass === '' && !serviceURL.href.includes('@')) {
-    return '';
+  if (user === "" && pass === "" && !serviceURL.href.includes("@")) {
+    return "";
   }
-  if (pass !== '') {
+  if (pass !== "") {
     return `${user}:${pass}`;
   }
   return user;

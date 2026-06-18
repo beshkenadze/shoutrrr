@@ -1,27 +1,27 @@
-import { MattermostService } from './mattermost.js';
-import type { Service } from '@shoutrrr/core';
+import type { Service } from "@shoutrrr/core";
+import { MattermostService } from "./mattermost.js";
 
-export { MattermostService, buildURL } from './mattermost.js';
-export type { MattermostServiceOptions, Transport } from './mattermost.js';
+export type { Logger, Params, Service } from "@shoutrrr/core";
 export {
-  MattermostConfig,
   createConfigFromURL,
-  SCHEME,
+  MattermostConfig,
   NOT_ENOUGH_ARGUMENTS,
-} from './config.js';
+  SCHEME,
+} from "./config.js";
+export type { MattermostServiceOptions, Transport } from "./mattermost.js";
+export { buildURL, MattermostService } from "./mattermost.js";
 export {
   createJSONPayload,
+  type MattermostJSON,
   serializePayload,
   setIcon,
-  type MattermostJSON,
-} from './payload.js';
-export type { Service, Params, Logger } from '@shoutrrr/core';
+} from "./payload.js";
 
 /** Service descriptor for scheme-based registration. */
 export const descriptor: {
   schemes: string[];
   factory: () => Service;
 } = {
-  schemes: ['mattermost'],
+  schemes: ["mattermost"],
   factory: (): Service => new MattermostService(),
 };

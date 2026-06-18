@@ -4,11 +4,11 @@ import {
   type FieldSchema,
   PropKeyResolver,
   type ServiceConfig,
-} from '@shoutrrr/core';
-import { Priority, priorityEnum } from './priority.js';
+} from "@shoutrrr/core";
+import { Priority, priorityEnum } from "./priority.js";
 
 /** Scheme is the identifying part of this service's configuration URL. */
-export const Scheme = 'ntfy';
+export const Scheme = "ntfy";
 
 /**
  * encodeUserinfoComponent mirrors Go net/url userinfo escaping (the mode used
@@ -19,13 +19,13 @@ export const Scheme = 'ntfy';
  */
 function encodeUserinfoComponent(s: string): string {
   const keep = /[A-Za-z0-9\-._~$&+,;=]/;
-  let out = '';
+  let out = "";
   for (const ch of s) {
     if (keep.test(ch)) {
       out += ch;
     } else {
       for (const byte of new TextEncoder().encode(ch)) {
-        out += `%${byte.toString(16).toUpperCase().padStart(2, '0')}`;
+        out += `%${byte.toString(16).toUpperCase().padStart(2, "0")}`;
       }
     }
   }
@@ -38,42 +38,128 @@ function encodeUserinfoComponent(s: string): string {
  * listed here, matching the Go split between url tags and key tags.
  */
 export const fieldSchema: FieldSchema[] = [
-  { name: 'title', key: ['title'], type: 'string', default: '', desc: 'Message title' },
-  { name: 'scheme', key: ['scheme'], type: 'string', default: 'https', desc: 'Server protocol, http or https' },
-  { name: 'tags', key: ['tags'], type: 'string[]', default: '', desc: 'List of tags that may or not map to emojis' },
-  { name: 'priority', key: ['priority'], type: 'enum', enumName: 'priority', default: 'default', desc: 'Message priority with 1=min, 3=default and 5=max' },
-  { name: 'actions', key: ['actions'], type: 'string[]', separator: ';', default: '', desc: 'Custom user action buttons for notifications' },
-  { name: 'click', key: ['click'], type: 'string', default: '', desc: 'Website opened when notification is clicked' },
-  { name: 'attach', key: ['attach'], type: 'string', default: '', desc: 'URL of an attachment' },
-  { name: 'filename', key: ['filename'], type: 'string', default: '', desc: 'File name of the attachment' },
-  { name: 'delay', key: ['delay', 'at', 'in'], type: 'string', default: '', desc: 'Timestamp or duration for delayed delivery' },
-  { name: 'email', key: ['email'], type: 'string', default: '', desc: 'E-mail address for e-mail notifications' },
-  { name: 'icon', key: ['icon'], type: 'string', default: '', desc: 'URL to use as notification icon' },
-  { name: 'cache', key: ['cache'], type: 'bool', default: 'yes', desc: 'Cache messages' },
-  { name: 'firebase', key: ['firebase'], type: 'bool', default: 'yes', desc: 'Send to firebase' },
-  { name: 'markdown', key: ['markdown'], type: 'bool', default: 'no', desc: 'Enable markdown formatting' },
+  {
+    name: "title",
+    key: ["title"],
+    type: "string",
+    default: "",
+    desc: "Message title",
+  },
+  {
+    name: "scheme",
+    key: ["scheme"],
+    type: "string",
+    default: "https",
+    desc: "Server protocol, http or https",
+  },
+  {
+    name: "tags",
+    key: ["tags"],
+    type: "string[]",
+    default: "",
+    desc: "List of tags that may or not map to emojis",
+  },
+  {
+    name: "priority",
+    key: ["priority"],
+    type: "enum",
+    enumName: "priority",
+    default: "default",
+    desc: "Message priority with 1=min, 3=default and 5=max",
+  },
+  {
+    name: "actions",
+    key: ["actions"],
+    type: "string[]",
+    separator: ";",
+    default: "",
+    desc: "Custom user action buttons for notifications",
+  },
+  {
+    name: "click",
+    key: ["click"],
+    type: "string",
+    default: "",
+    desc: "Website opened when notification is clicked",
+  },
+  {
+    name: "attach",
+    key: ["attach"],
+    type: "string",
+    default: "",
+    desc: "URL of an attachment",
+  },
+  {
+    name: "filename",
+    key: ["filename"],
+    type: "string",
+    default: "",
+    desc: "File name of the attachment",
+  },
+  {
+    name: "delay",
+    key: ["delay", "at", "in"],
+    type: "string",
+    default: "",
+    desc: "Timestamp or duration for delayed delivery",
+  },
+  {
+    name: "email",
+    key: ["email"],
+    type: "string",
+    default: "",
+    desc: "E-mail address for e-mail notifications",
+  },
+  {
+    name: "icon",
+    key: ["icon"],
+    type: "string",
+    default: "",
+    desc: "URL to use as notification icon",
+  },
+  {
+    name: "cache",
+    key: ["cache"],
+    type: "bool",
+    default: "yes",
+    desc: "Cache messages",
+  },
+  {
+    name: "firebase",
+    key: ["firebase"],
+    type: "bool",
+    default: "yes",
+    desc: "Send to firebase",
+  },
+  {
+    name: "markdown",
+    key: ["markdown"],
+    type: "bool",
+    default: "no",
+    desc: "Enable markdown formatting",
+  },
 ];
 
 /** Config holds the ntfy service configuration. */
 export class Config implements ServiceConfig {
   // URL-part fields.
-  host = 'ntfy.sh';
-  topic = '';
-  username = '';
-  password = '';
+  host = "ntfy.sh";
+  topic = "";
+  username = "";
+  password = "";
 
   // Query fields (defaults set explicitly to match Go SetDefaultProps).
-  title = '';
-  scheme = 'https';
-  tags: string[] = [''];
+  title = "";
+  scheme = "https";
+  tags: string[] = [""];
   priority: number = Priority.Default;
-  actions: string[] = [''];
-  click = '';
-  attach = '';
-  filename = '';
-  delay = '';
-  email = '';
-  icon = '';
+  actions: string[] = [""];
+  click = "";
+  attach = "";
+  filename = "";
+  delay = "";
+  email = "";
+  icon = "";
   cache = true;
   firebase = true;
   markdown = false;
@@ -96,7 +182,7 @@ export class Config implements ServiceConfig {
   getURL(): URL {
     const user = encodeUserinfoComponent(this.username);
     const pass = encodeUserinfoComponent(this.password);
-    const path = this.topic.startsWith('/') ? this.topic : `/${this.topic}`;
+    const path = this.topic.startsWith("/") ? this.topic : `/${this.topic}`;
     const query = this.resolver().buildQuery();
     return new URL(`${Scheme}://${user}:${pass}@${this.host}${path}?${query}`);
   }
@@ -110,7 +196,7 @@ export class Config implements ServiceConfig {
     this.password = decodeURIComponent(url.password);
     this.username = decodeURIComponent(url.username);
     this.host = url.host;
-    this.topic = url.pathname.replace(/^\//, '');
+    this.topic = url.pathname.replace(/^\//, "");
 
     const resolver = this.resolver();
     for (const [key, value] of url.searchParams.entries()) {
@@ -124,11 +210,11 @@ export class Config implements ServiceConfig {
    * is set.
    */
   getAPIURL(): string {
-    const path = this.topic.startsWith('/') ? this.topic : `/${this.topic}`;
+    const path = this.topic.startsWith("/") ? this.topic : `/${this.topic}`;
     const url = new URL(`${this.scheme}://placeholder`);
     url.host = this.host;
     url.pathname = path;
-    if (this.password !== '') {
+    if (this.password !== "") {
       url.username = encodeURIComponent(this.username);
       url.password = encodeURIComponent(this.password);
     }

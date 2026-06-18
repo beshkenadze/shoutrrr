@@ -1,37 +1,38 @@
 // @shoutrrr/smtp public API.
-export { AuthType, authTypeFormatter } from './authType.js';
+
+export type {
+  EnumFormatter,
+  Logger,
+  Params,
+  Service,
+  ServiceConfig,
+} from "@shoutrrr/core";
+export { AuthType, authTypeFormatter } from "./authType.js";
+export { Config, DefaultPort, Scheme, smtpFieldSchema } from "./config.js";
 export {
   Encryption,
   encryptionFormatter,
   ImplicitTLSPort,
   useImplicitTLS,
-} from './encMethod.js';
-export { Config, Scheme, DefaultPort, smtpFieldSchema } from './config.js';
-export {
-  SmtpService,
-  buildTransportOptions,
-  buildMessage,
-  resolveClientHost,
-} from './smtp.js';
+} from "./encMethod.js";
 export type {
   MailMessage,
+  TransportFactory,
   TransportLike,
   TransportOptions,
-  TransportFactory,
-} from './smtp.js';
-export type {
-  Params,
-  EnumFormatter,
-  Logger,
-  ServiceConfig,
-  Service,
-} from '@shoutrrr/core';
+} from "./smtp.js";
+export {
+  buildMessage,
+  buildTransportOptions,
+  resolveClientHost,
+  SmtpService,
+} from "./smtp.js";
 
-import { SmtpService } from './smtp.js';
-import type { Service } from '@shoutrrr/core';
+import type { Service } from "@shoutrrr/core";
+import { SmtpService } from "./smtp.js";
 
 /** descriptor registers this service with the scheme registry. */
 export const descriptor: { schemes: string[]; factory: () => Service } = {
-  schemes: ['smtp'],
+  schemes: ["smtp"],
   factory: (): Service => new SmtpService(),
 };

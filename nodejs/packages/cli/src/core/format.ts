@@ -39,7 +39,10 @@ export const colorizeContainer = colorizeDesc;
 // --- value helpers (port of format.go) ---
 
 /** Port of format.ParseBool. Returns [parsedValue, ok]. */
-export function parseBool(value: string, defaultValue: boolean): [boolean, boolean] {
+export function parseBool(
+  value: string,
+  defaultValue: boolean,
+): [boolean, boolean] {
   switch (value.toLowerCase()) {
     case "true":
     case "1":
@@ -100,7 +103,9 @@ function pad(count: number, min = 1): string {
 /**
  * Port of format.GetServiceConfig — returns the config exposed by a service.
  */
-export function getServiceConfig(service: { getConfig(): ServiceConfig }): ServiceConfig {
+export function getServiceConfig(service: {
+  getConfig(): ServiceConfig;
+}): ServiceConfig {
   return service.getConfig();
 }
 
@@ -122,7 +127,10 @@ export function getConfigFormat(config: ServiceConfig): FieldInfo[] {
  * command passes `true`, which uses preLen=30 and renders each field's current
  * value; `false` uses preLen=16 and substitutes the field type name.
  */
-export function colorFormatTree(fields: FieldInfo[], withValues = true): string {
+export function colorFormatTree(
+  fields: FieldInfo[],
+  withValues = true,
+): string {
   let maxKeyLength = 0;
   for (const field of fields) {
     maxKeyLength = Math.max(field.name.length, maxKeyLength);

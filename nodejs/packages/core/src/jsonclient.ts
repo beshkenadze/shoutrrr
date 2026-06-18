@@ -12,10 +12,10 @@
  * pool / proxy / MockAgent) or a `fetch` override (`FetchLike`, used by tests on
  * Bun where undici's MockAgent does not work).
  */
-import type { Dispatcher } from 'undici';
+import type { Dispatcher } from "undici";
 
 /** Default content type for JSON (port of jsonclient.ContentType). */
-export const ContentType = 'application/json';
+export const ContentType = "application/json";
 
 /** Error thrown on a non-2xx JSON response, carrying the parsed body. */
 export class ApiError extends Error {
@@ -24,14 +24,17 @@ export class ApiError extends Error {
 
   constructor(statusCode: number, body: unknown) {
     super(`unknown error (HTTP ${statusCode})`);
-    this.name = 'ApiError';
+    this.name = "ApiError";
     this.statusCode = statusCode;
     this.body = body;
   }
 }
 
 /** Minimal fetch shape so the transport can be injected/overridden in tests. */
-export type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
+export type FetchLike = (
+  input: string,
+  init?: RequestInit,
+) => Promise<Response>;
 
 export interface JsonClientOptions {
   /** undici Dispatcher, forwarded to fetch (Node connection pool / MockAgent). */
@@ -53,13 +56,13 @@ export class JsonClient {
 
   /** GET with a JSON response. */
   async get<T>(url: string): Promise<T> {
-    const res = await this.request('GET', url);
+    const res = await this.request("GET", url);
     return this.parseChecked<T>(res);
   }
 
   /** POST a JSON body and parse the JSON response. */
   async post<TRes>(url: string, body: unknown): Promise<TRes> {
-    const res = await this.request('POST', url, {
+    const res = await this.request("POST", url, {
       body: JSON.stringify(body),
       contentType: ContentType,
     });
@@ -68,7 +71,7 @@ export class JsonClient {
 
   /** PUT a JSON body and parse the JSON response. */
   async put<TRes>(url: string, body: unknown): Promise<TRes> {
-    const res = await this.request('PUT', url, {
+    const res = await this.request("PUT", url, {
       body: JSON.stringify(body),
       contentType: ContentType,
     });
@@ -80,13 +83,12 @@ export class JsonClient {
     url: string,
     form: Record<string, string> | URLSearchParams,
   ): Promise<TRes> {
-    const body = (form instanceof URLSearchParams
-      ? form
-      : new URLSearchParams(form)
+    const body = (
+      form instanceof URLSearchParams ? form : new URLSearchParams(form)
     ).toString();
-    const res = await this.request('POST', url, {
+    const res = await this.request("POST", url, {
       body,
-      contentType: 'application/x-www-form-urlencoded',
+      contentType: "application/x-www-form-urlencoded",
     });
     return this.parseChecked<TRes>(res);
   }
@@ -100,11 +102,21 @@ export class JsonClient {
   async request(
     method: string,
     url: string,
-    opts: { body?: string; contentType?: string; headers?: Record<string, string> } = {},
+    opts: {
+      body?: string;
+      contentType?: string;
+      headers?: Record<string, string>;
+    } = {},
   ): Promise<Response> {
-    const headers: Record<string, string> = { ...this.headers, ...opts.headers };
-    if (opts.contentType !== undefined && headers['Content-Type'] === undefined) {
-      headers['Content-Type'] = opts.contentType;
+    const headers: Record<string, string> = {
+      ...this.headers,
+      ...opts.headers,
+    };
+    if (
+      opts.contentType !== undefined &&
+      headers["Content-Type"] === undefined
+    ) {
+      headers["Content-Type"] = opts.contentType;
     }
     const init: RequestInit = {
       method,
@@ -131,7 +143,7 @@ export class JsonClient {
 /** Parses a Response body as JSON, tolerating empty (204) and non-JSON bodies. */
 export async function parseBody(res: Response): Promise<unknown> {
   const text = await res.text();
-  if (text === '') {
+  if (text === "") {
     return undefined;
   }
   try {

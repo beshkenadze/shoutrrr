@@ -30,7 +30,10 @@ export function createSender(...rawURLs: string[]): ServiceRouter {
 }
 
 /** Port of shoutrrr.NewSender — like createSender but with a logger. */
-export function newSender(logger: Logger | undefined, ...serviceURLs: string[]): ServiceRouter {
+export function newSender(
+  logger: Logger | undefined,
+  ...serviceURLs: string[]
+): ServiceRouter {
   const router = new ServiceRouter(logger);
   for (const url of serviceURLs) {
     router.addService(url);

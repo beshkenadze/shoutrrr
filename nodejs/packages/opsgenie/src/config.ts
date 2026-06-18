@@ -1,6 +1,6 @@
 import {
-  goQueryEscape,
   type EnumFormatter,
+  goQueryEscape,
   type ServiceConfig,
 } from "@shoutrrr/core";
 import { Entity } from "./payload.ts";

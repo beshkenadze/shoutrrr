@@ -4,13 +4,13 @@ import {
   JsonClient,
   type Logger,
   type Params,
-  parseBody,
   PropKeyResolver,
+  parseBody,
   type Service,
   Standard,
-} from '@shoutrrr/core';
-import { MattermostConfig, QUERY_SCHEMA } from './config.js';
-import { createJSONPayload, serializePayload } from './payload.js';
+} from "@shoutrrr/core";
+import { MattermostConfig, QUERY_SCHEMA } from "./config.js";
+import { createJSONPayload, serializePayload } from "./payload.js";
 
 /** Transport posts a serialized JSON body to a URL. Mirrors JsonClient.post. */
 export type Transport = (url: string, body: string) => Promise<unknown>;
@@ -45,7 +45,7 @@ export class MattermostService implements Service {
       // so POST it raw via `request` rather than `post`, which would re-stringify
       // and double-encode it. Mirror `post`'s 2xx-or-ApiError contract.
       this.transport = async (url, body) => {
-        const res = await client.request('POST', url, {
+        const res = await client.request("POST", url, {
           body,
           contentType: ContentType,
         });

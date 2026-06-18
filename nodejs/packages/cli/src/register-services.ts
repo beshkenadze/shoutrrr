@@ -11,8 +11,6 @@
  * opaque thunks and cast to the CLI's `ServiceFactory`.
  */
 
-import { registerService, type ServiceFactory } from "./core/router.js";
-
 import { descriptor as bark } from "@shoutrrr/bark";
 import { descriptor as discord } from "@shoutrrr/discord";
 import { descriptor as generic } from "@shoutrrr/generic";
@@ -32,6 +30,7 @@ import { descriptor as smtp } from "@shoutrrr/smtp";
 import { descriptor as teams } from "@shoutrrr/teams";
 import { descriptor as telegram } from "@shoutrrr/telegram";
 import { descriptor as zulip } from "@shoutrrr/zulip";
+import { registerService, type ServiceFactory } from "./core/router.js";
 
 interface ServiceDescriptor {
   schemes: readonly string[];

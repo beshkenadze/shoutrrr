@@ -4,7 +4,7 @@ import "../src/core/index.js";
 import { runSend, type SendResult } from "../src/commands/send.js";
 import { runVerify } from "../src/commands/verify.js";
 import { colorFormatTree, isNumber } from "../src/core/format.js";
-import { ServiceRouter, listServices } from "../src/core/router.js";
+import { listServices, ServiceRouter } from "../src/core/router.js";
 import type { FieldInfo } from "../src/core/types.js";
 import { EX_UNAVAILABLE } from "../src/exit-codes.js";
 import { ellipsis, removeDuplicates } from "../src/util.js";
@@ -200,9 +200,13 @@ describe("verify command", () => {
     const { registerService } = await import("../src/core/router.js");
     const { descriptor } = await import("@shoutrrr/telegram");
     for (const scheme of descriptor.schemes) {
-      registerService(scheme, descriptor.factory as unknown as Parameters<typeof registerService>[1]);
+      registerService(
+        scheme,
+        descriptor.factory as unknown as Parameters<typeof registerService>[1],
+      );
     }
-    const url = "telegram://110201543:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw@telegram?chats=@chan";
+    const url =
+      "telegram://110201543:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw@telegram?chats=@chan";
     expect(() => runVerify(url)).not.toThrow();
     expect(runVerify(url)).toBe("Service 'telegram' URL is valid.\n");
   });
@@ -239,7 +243,16 @@ describe("util.removeDuplicates", () => {
 
 describe("format.isNumber (strconv.ParseFloat parity)", () => {
   test("accepts decimal, signed, scientific, and Inf/NaN", () => {
-    for (const v of ["12", "-3.14", "+5", ".5", "1e3", "Inf", "NaN", "-Infinity"]) {
+    for (const v of [
+      "12",
+      "-3.14",
+      "+5",
+      ".5",
+      "1e3",
+      "Inf",
+      "NaN",
+      "-Infinity",
+    ]) {
       expect(isNumber(v)).toBe(true);
     }
   });

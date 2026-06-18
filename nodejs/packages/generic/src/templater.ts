@@ -1,4 +1,4 @@
-import type { Params } from '@shoutrrr/core';
+import type { Params } from "@shoutrrr/core";
 
 /** A compiled template that renders params into a string. */
 export interface Template {
@@ -25,7 +25,7 @@ export class Templater {
     }
     this.templates.set(id, {
       execute: (params: Params): string =>
-        body.replace(ACTION, (_match, field: string) => params[field] ?? ''),
+        body.replace(ACTION, (_match, field: string) => params[field] ?? ""),
     });
   }
 

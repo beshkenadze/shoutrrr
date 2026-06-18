@@ -6,26 +6,26 @@
  * JSON data fields. Header keys are normalized to canonical kebab-cased form.
  */
 
-export const EXTRA_PREFIX = '$';
-export const HEADER_PREFIX = '@';
+export const EXTRA_PREFIX = "$";
+export const HEADER_PREFIX = "@";
 
-const UPPER_A = 'A'.charCodeAt(0);
-const UPPER_Z = 'Z'.charCodeAt(0);
-const CASE_OFFSET = 'a'.charCodeAt(0) - 'A'.charCodeAt(0);
-const DASH = '-'.charCodeAt(0);
+const UPPER_A = "A".charCodeAt(0);
+const UPPER_Z = "Z".charCodeAt(0);
+const CASE_OFFSET = "a".charCodeAt(0) - "A".charCodeAt(0);
+const DASH = "-".charCodeAt(0);
 
 /**
  * normalizedHeaderKey converts a header key to canonical form (e.g. "contentType",
  * "content-type" and "ContentType" all become "Content-Type"). Byte-indexed to match Go.
  */
 export function normalizedHeaderKey(key: string): string {
-  let out = '';
+  let out = "";
   for (let i = 0; i < key.length; i++) {
     let code = key.charCodeAt(i);
     if (code >= UPPER_A && code <= UPPER_Z) {
       // Char is uppercase: insert a missing dash if not at start and previous wasn't a dash.
       if (i > 0 && key.charCodeAt(i - 1) !== DASH) {
-        out += '-';
+        out += "-";
       }
     } else if (i === 0 || key.charCodeAt(i - 1) === DASH) {
       // First char, or previous was a dash: uppercase it.
@@ -63,7 +63,7 @@ export function stripCustomQueryValues(query: URLSearchParams): {
 
   // Snapshot keys first since we mutate the query while iterating.
   for (const key of [...new Set(query.keys())]) {
-    const first = query.getAll(key)[0] ?? '';
+    const first = query.getAll(key)[0] ?? "";
     if (key[0] === HEADER_PREFIX) {
       headers[normalizedHeaderKey(key.slice(1))] = first;
     } else if (key[0] === EXTRA_PREFIX) {

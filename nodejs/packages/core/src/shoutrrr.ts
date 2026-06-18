@@ -1,8 +1,9 @@
 /**
  * Top-level convenience API — port of Go `shoutrrr.go`.
  */
-import type { Logger } from './types.ts';
-import { ServiceRouter } from './router.ts';
+
+import { ServiceRouter } from "./router.ts";
+import type { Logger } from "./types.ts";
 
 let defaultLogger: Logger | undefined;
 

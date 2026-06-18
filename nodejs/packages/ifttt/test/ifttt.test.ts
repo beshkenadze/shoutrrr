@@ -1,5 +1,10 @@
-import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { afterEach, describe, expect, it } from "bun:test";
+import {
+  createServer,
+  type IncomingMessage,
+  type Server,
+  type ServerResponse,
+} from "node:http";
 import { Config } from "../src/config.js";
 import { IftttService } from "../src/ifttt.js";
 import { createJSONToSend } from "../src/payload.js";
@@ -71,7 +76,9 @@ describe("the ifttt package", () => {
     it("should error when an invalid query key is given", () => {
       const service = new IftttService();
       expect(() =>
-        service.initialize(new URL("ifttt://dummyID/?events=event1&badquery=foo")),
+        service.initialize(
+          new URL("ifttt://dummyID/?events=event1&badquery=foo"),
+        ),
       ).toThrow();
     });
 
@@ -94,9 +101,7 @@ describe("the ifttt package", () => {
     it("should reject a negative title value (strict uint parse, like Go ParseUint)", () => {
       const config = new Config();
       expect(() =>
-        config.setURL(
-          new URL("ifttt://dummyID/?events=event1&titlevalue=-1"),
-        ),
+        config.setURL(new URL("ifttt://dummyID/?events=event1&titlevalue=-1")),
       ).toThrow();
     });
 
@@ -110,7 +115,9 @@ describe("the ifttt package", () => {
     it("should set value1, value2 and value3", () => {
       const config = new Config();
       config.setURL(
-        new URL("ifttt://dummyID/?events=dummyevent&value3=three&value2=two&value1=one"),
+        new URL(
+          "ifttt://dummyID/?events=dummyevent&value3=three&value2=two&value1=one",
+        ),
       );
       expect(config.value1).toBe("one");
       expect(config.value2).toBe("two");

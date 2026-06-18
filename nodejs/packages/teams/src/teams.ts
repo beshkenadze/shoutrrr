@@ -2,19 +2,19 @@ import {
   JsonClient,
   type JsonClientOptions,
   type Logger,
-  PropKeyResolver,
   type Params,
+  PropKeyResolver,
   type Service,
   Standard,
-} from '@shoutrrr/core';
+} from "@shoutrrr/core";
 import {
   buildWebhookURL,
   Config,
   configFromWebhookURL,
   LegacyHost,
   PROP_SCHEMA,
-} from './config.js';
-import { buildPayload } from './payload.js';
+} from "./config.js";
+import { buildPayload } from "./payload.js";
 
 /** Options for constructing a TeamsService (forwards the transport to JsonClient). */
 export type TeamsServiceOptions = JsonClientOptions;
@@ -49,17 +49,17 @@ export class TeamsService implements Service {
     try {
       resolver.updateConfigFromParams(params);
     } catch (err) {
-      this.standard.logf('Failed to update params: %v', err);
+      this.standard.logf("Failed to update params: %v", err);
     }
 
     const payload = buildPayload(message, this.config.title, this.config.color);
 
     let host = this.config.host;
-    if (host === '') {
+    if (host === "") {
       host = LegacyHost;
       this.standard.logf(
-        'Warning: No host specified, update your Teams URL: %s',
-        'https://containrrr.dev/shoutrrr/services/teams',
+        "Warning: No host specified, update your Teams URL: %s",
+        "https://containrrr.dev/shoutrrr/services/teams",
       );
     }
 

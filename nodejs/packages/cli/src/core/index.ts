@@ -7,13 +7,13 @@
  */
 
 import { registerService } from "./router.js";
-import { LoggerService, SCHEME as LOGGER_SCHEME } from "./services/logger.js";
+import { SCHEME as LOGGER_SCHEME, LoggerService } from "./services/logger.js";
 
 // Self-register the built-in logger service.
 registerService(LOGGER_SCHEME, () => new LoggerService());
 
-export * from "./types.js";
-export * from "./router.js";
 export * from "./format.js";
-export * as shoutrrr from "./shoutrrr.js";
+export * from "./router.js";
 export { LoggerService, SCHEME as LoggerScheme } from "./services/logger.js";
+export * as shoutrrr from "./shoutrrr.js";
+export * from "./types.js";

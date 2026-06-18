@@ -1,7 +1,7 @@
+export type { Logger, Params, Service, ServiceConfig } from "@shoutrrr/core";
 export { Config, Scheme } from "./config.js";
 export { IftttService } from "./ifttt.js";
 export { createJSONToSend, type JsonPayload } from "./payload.js";
-export type { Logger, Params, Service, ServiceConfig } from "@shoutrrr/core";
 
 import { IftttService } from "./ifttt.js";
 

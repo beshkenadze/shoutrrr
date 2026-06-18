@@ -6,17 +6,18 @@
  * builds the query string (omitting any field whose serialized value equals
  * its default — exactly like Go's BuildQueryWithCustomFields + IsDefault).
  */
-import type { Params, ServiceConfig, EnumFormatter } from './types.ts';
+
 import {
+  type FieldSchema,
   getConfigFieldString,
   goQueryEscape,
   setConfigField,
-  type FieldSchema,
   type URLPart,
-} from './format.ts';
+} from "./format.ts";
+import type { EnumFormatter, Params, ServiceConfig } from "./types.ts";
 
 /** Prefix used to escape custom query keys that collide with config prop keys. */
-export const KEY_PREFIX = '__';
+export const KEY_PREFIX = "__";
 
 function configRecord(config: ServiceConfig): Record<string, unknown> {
   return config as unknown as Record<string, unknown>;
@@ -41,7 +42,7 @@ export class PropKeyResolver {
     for (const field of schema) {
       for (const rawKey of field.key ?? []) {
         const key = rawKey.toLowerCase();
-        if (key !== '') {
+        if (key !== "") {
           keys.push(key);
           this.keyFields.set(key, field);
         }
@@ -68,7 +69,7 @@ export class PropKeyResolver {
   /** Whether `value` equals the default for `key`. */
   isDefault(key: string, value: string): boolean {
     const field = this.keyFields.get(key);
-    return (field?.default ?? '') === value;
+    return (field?.default ?? "") === value;
   }
 
   /** Reads the serialized value of the field tagged with `key`. */
@@ -84,7 +85,9 @@ export class PropKeyResolver {
   set(key: string, value: string): void {
     const field = this.keyFields.get(key.toLowerCase());
     if (!field) {
-      throw new Error(`${key} is not a valid config key ${this.keys.join(',')}`);
+      throw new Error(
+        `${key} is not a valid config key ${this.keys.join(",")}`,
+      );
     }
     setConfigField(configRecord(this.config), field, value, this.enums);
   }
@@ -113,13 +116,13 @@ export class PropKeyResolver {
   setDefaultProps(): void {
     for (const field of this.schema) {
       const primary = field.key?.[0];
-      if (primary === undefined || primary === '') {
+      if (primary === undefined || primary === "") {
         continue;
       }
       setConfigField(
         configRecord(this.config),
         field,
-        field.default ?? '',
+        field.default ?? "",
         this.enums,
       );
     }
@@ -131,7 +134,7 @@ export class PropKeyResolver {
     for (const field of this.schema) {
       for (const part of field.urlParts ?? []) {
         const raw = parts[part];
-        if (raw !== undefined && raw !== '') {
+        if (raw !== undefined && raw !== "") {
           setConfigField(configRecord(this.config), field, raw, this.enums);
         }
       }
@@ -183,7 +186,7 @@ export class PropKeyResolver {
       }
       parts.push(`${goQueryEscape(key)}=${goQueryEscape(value)}`);
     }
-    return parts.join('&');
+    return parts.join("&");
   }
 }
 
@@ -198,7 +201,7 @@ function safeDecode(value: string): string {
 
 /** Extracts named URL parts (port of Go urlpart mapping). */
 function urlPartValues(url: URL): Record<URLPart, string> {
-  const pathSegments = url.pathname.replace(/^\//, '').split('/');
+  const pathSegments = url.pathname.replace(/^\//, "").split("/");
   const port = url.port;
   const password = url.password;
   return {
@@ -206,46 +209,46 @@ function urlPartValues(url: URL): Record<URLPart, string> {
     pass: safeDecode(password),
     host: url.hostname,
     port,
-    path: url.pathname.replace(/^\//, ''),
-    path1: pathSegments[0] ?? '',
-    path2: pathSegments[1] ?? '',
-    path3: pathSegments[2] ?? '',
-    path4: pathSegments[3] ?? '',
-    query: url.search.replace(/^\?/, ''),
+    path: url.pathname.replace(/^\//, ""),
+    path1: pathSegments[0] ?? "",
+    path2: pathSegments[1] ?? "",
+    path3: pathSegments[2] ?? "",
+    path4: pathSegments[3] ?? "",
+    query: url.search.replace(/^\?/, ""),
   };
 }
 
 function applyURLPart(url: URL, part: URLPart, value: string): void {
   switch (part) {
-    case 'user':
+    case "user":
       url.username = value;
       break;
-    case 'pass':
+    case "pass":
       url.password = value;
       break;
-    case 'host':
+    case "host":
       url.hostname = value;
       break;
-    case 'port':
+    case "port":
       url.port = value;
       break;
-    case 'path':
+    case "path":
       url.pathname = `/${value}`;
       break;
-    case 'path1':
-    case 'path2':
-    case 'path3':
-    case 'path4': {
+    case "path1":
+    case "path2":
+    case "path3":
+    case "path4": {
       const idx = Number(part.slice(4)) - 1;
-      const segments = url.pathname.replace(/^\//, '').split('/');
+      const segments = url.pathname.replace(/^\//, "").split("/");
       while (segments.length <= idx) {
-        segments.push('');
+        segments.push("");
       }
       segments[idx] = value;
-      url.pathname = `/${segments.join('/')}`;
+      url.pathname = `/${segments.join("/")}`;
       break;
     }
-    case 'query':
+    case "query":
       url.search = value;
       break;
     default: {

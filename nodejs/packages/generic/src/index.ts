@@ -1,25 +1,25 @@
-import { GenericService } from './generic.ts';
+import { GenericService } from "./generic.ts";
 
-export { GenericService, createSendParams } from './generic.ts';
+export type { Logger, Params, Service } from "@shoutrrr/core";
 export {
   Config,
   configFromWebhookURL,
   configSchema,
-  defaultConfig,
   DefaultWebhookScheme,
+  defaultConfig,
   Scheme,
-} from './config.ts';
+} from "./config.ts";
 export {
   appendCustomQueryValues,
   normalizedHeaderKey,
   stripCustomQueryValues,
-} from './customQuery.ts';
-export { jsonPayload } from './payload.ts';
-export { Templater } from './templater.ts';
-export type { Logger, Params, Service } from '@shoutrrr/core';
+} from "./customQuery.ts";
+export { createSendParams, GenericService } from "./generic.ts";
+export { jsonPayload } from "./payload.ts";
+export { Templater } from "./templater.ts";
 
 /** Descriptor used by the service registry to construct a GenericService for the `generic` scheme. */
 export const descriptor = {
-  schemes: ['generic'] as const,
+  schemes: ["generic"] as const,
   factory: (): GenericService => new GenericService(),
 };

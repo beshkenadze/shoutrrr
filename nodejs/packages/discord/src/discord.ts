@@ -1,10 +1,10 @@
 import {
   ApiError,
   type FetchLike,
+  type Service as IService,
   JsonClient,
   type Logger,
   type Params,
-  type Service as IService,
   Standard,
 } from "@shoutrrr/core";
 import { Config } from "./config.js";

@@ -1,19 +1,19 @@
 // Port of Go pkg/services/join/join.go (Service).
 
-import { type Dispatcher } from 'undici';
-import { Config } from './config.js';
 import {
-  JsonClient,
   goQueryEscape,
-  Standard,
+  JsonClient,
   type Logger,
   type Params,
-} from '@shoutrrr/core';
+  Standard,
+} from "@shoutrrr/core";
+import type { Dispatcher } from "undici";
+import { Config } from "./config.js";
 
 /** Default Join push endpoint (mirrors the Go hookURL constant). */
 export const hookURL =
-  'https://joinjoaomgcd.appspot.com/_ah/api/messaging/v1/sendPush';
-const contentType = 'text/plain';
+  "https://joinjoaomgcd.appspot.com/_ah/api/messaging/v1/sendPush";
+const contentType = "text/plain";
 
 export interface JoinServiceOptions {
   /** Injectable undici dispatcher (e.g. for connection pooling/testing). */
@@ -48,12 +48,12 @@ export class JoinService extends Standard {
   async send(message: string, params?: Params): Promise<void> {
     const config = this.config;
     if (!config) {
-      throw new Error('service not initialized');
+      throw new Error("service not initialized");
     }
 
-    const title = params?.['title'] ?? config.title;
-    const icon = params?.['icon'] ?? config.icon;
-    const devices = config.devices.join(',');
+    const title = params?.["title"] ?? config.title;
+    const icon = params?.["icon"] ?? config.icon;
+    const devices = config.devices.join(",");
 
     await this.sendToDevices(config.apiKey, devices, message, title, icon);
   }
@@ -68,27 +68,27 @@ export class JoinService extends Standard {
     // Build the query exactly like Go's url.Values.Encode() (space => "+",
     // comma => "%2C"); goQueryEscape matches that byte output.
     const pairs: Array<[string, string]> = [
-      ['deviceIds', devices],
-      ['apikey', apiKey],
-      ['text', message],
+      ["deviceIds", devices],
+      ["apikey", apiKey],
+      ["text", message],
     ];
 
     if (title.length > 0) {
-      pairs.push(['title', title]);
+      pairs.push(["title", title]);
     }
 
     if (icon.length > 0) {
-      pairs.push(['icon', icon]);
+      pairs.push(["icon", icon]);
     }
 
     const query = pairs
       .map(([key, value]) => `${goQueryEscape(key)}=${goQueryEscape(value)}`)
-      .join('&');
+      .join("&");
     const apiURL = `${this.baseURL}?${query}`;
 
     // Mirrors Go's http.Post(apiURL, "text/plain", nil): a text/plain POST with
     // no body. request() returns the raw Response without throwing on non-2xx.
-    const res = await this.client.request('POST', apiURL, { contentType });
+    const res = await this.client.request("POST", apiURL, { contentType });
 
     // Drain the body to release the connection.
     await res.text();

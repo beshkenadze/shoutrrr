@@ -1,8 +1,14 @@
 // Matrix notification service — port of Go matrix.go.
-import type { Dispatcher } from 'undici';
-import { MatrixClient } from './client.js';
-import { Config, Scheme } from './config.js';
-import { Standard, type Logger, type Params, type Service } from '@shoutrrr/core';
+
+import {
+  type Logger,
+  type Params,
+  type Service,
+  Standard,
+} from "@shoutrrr/core";
+import type { Dispatcher } from "undici";
+import { MatrixClient } from "./client.js";
+import { Config, Scheme } from "./config.js";
 
 export { Scheme };
 
@@ -52,18 +58,20 @@ export class MatrixService implements Service {
 
   private async ensureLoggedIn(): Promise<void> {
     if (!this.config || !this.client) {
-      throw new Error('matrix service is not initialized');
+      throw new Error("matrix service is not initialized");
     }
     if (!this.loginPromise) {
       const { user, password, deviceID } = this.config;
       const client = this.client;
-      if (user !== '') {
+      if (user !== "") {
         // Reset the cached promise on failure so a later send can retry
         // (a transient login error must not permanently brick the service).
-        this.loginPromise = client.login(user, password, deviceID).catch((err) => {
-          this.loginPromise = undefined;
-          throw err;
-        });
+        this.loginPromise = client
+          .login(user, password, deviceID)
+          .catch((err) => {
+            this.loginPromise = undefined;
+            throw err;
+          });
       } else {
         client.useToken(password);
         this.loginPromise = Promise.resolve();
@@ -74,7 +82,7 @@ export class MatrixService implements Service {
 
   async send(message: string, params?: Params): Promise<void> {
     if (!this.config || !this.client) {
-      throw new Error('matrix service is not initialized');
+      throw new Error("matrix service is not initialized");
     }
 
     // Mirror Go's Send: params are applied to a throwaway config copy (so they
@@ -88,7 +96,7 @@ export class MatrixService implements Service {
 
     if (errors.length > 0) {
       for (const err of errors) {
-        this.standard.logf('error sending message: %s', err.message);
+        this.standard.logf("error sending message: %s", err.message);
       }
       throw new Error(
         `${errors.length} error(s) sending message, with initial error: ${errors[0]!.message}`,

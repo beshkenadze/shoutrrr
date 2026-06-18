@@ -1,7 +1,7 @@
-import { describe, it, expect, afterEach } from 'bun:test';
-import { GoogleChatConfig } from '../src/config.ts';
-import { GoogleChatService } from '../src/googlechat.ts';
-import { descriptor } from '../src/index.ts';
+import { afterEach, describe, expect, it } from "bun:test";
+import { GoogleChatConfig } from "../src/config.ts";
+import { GoogleChatService } from "../src/googlechat.ts";
+import { descriptor } from "../src/index.ts";
 
 const realFetch = globalThis.fetch;
 
@@ -18,10 +18,9 @@ interface CapturedRequest {
  * MockAgent — same assertions (POST to the reconstructed webhook URL + JSON
  * body; 200 resolves, error rejects). Restored in `afterEach`.
  */
-function stubFetch(response: {
-  status: number;
-  body: string;
-}): { captured?: CapturedRequest } {
+function stubFetch(response: { status: number; body: string }): {
+  captured?: CapturedRequest;
+} {
   const slot: { captured?: CapturedRequest } = {};
   globalThis.fetch = (async (
     input: Parameters<typeof fetch>[0],
@@ -41,24 +40,24 @@ afterEach(() => {
   globalThis.fetch = realFetch;
 });
 
-describe('Google Chat Service', () => {
-  it('should build a valid Google Chat Incoming Webhook URL', () => {
+describe("Google Chat Service", () => {
+  it("should build a valid Google Chat Incoming Webhook URL", () => {
     const config = new GoogleChatConfig();
     config.setURL(
       new URL(
-        'googlechat://chat.googleapis.com/v1/spaces/FOO/messages?key=bar&token=baz',
+        "googlechat://chat.googleapis.com/v1/spaces/FOO/messages?key=bar&token=baz",
       ),
     );
 
     const expected =
-      'https://chat.googleapis.com/v1/spaces/FOO/messages?key=bar&token=baz';
+      "https://chat.googleapis.com/v1/spaces/FOO/messages?key=bar&token=baz";
     expect(config.getAPIURL().toString()).toBe(expected);
   });
 
-  describe('parsing the configuration URL', () => {
-    it('should be identical after de-/serialization', () => {
+  describe("parsing the configuration URL", () => {
+    it("should be identical after de-/serialization", () => {
       const testURL =
-        'googlechat://chat.googleapis.com/v1/spaces/FOO/messages?key=bar&token=baz';
+        "googlechat://chat.googleapis.com/v1/spaces/FOO/messages?key=bar&token=baz";
 
       const config = new GoogleChatConfig();
       config.setURL(new URL(testURL));
@@ -67,12 +66,14 @@ describe('Google Chat Service', () => {
     });
   });
 
-  describe('setURL validation', () => {
+  describe("setURL validation", () => {
     it("should error when 'key' is missing", () => {
       const config = new GoogleChatConfig();
       expect(() =>
         config.setURL(
-          new URL('googlechat://chat.googleapis.com/v1/spaces/FOO/messages?token=baz'),
+          new URL(
+            "googlechat://chat.googleapis.com/v1/spaces/FOO/messages?token=baz",
+          ),
         ),
       ).toThrow("missing field 'key'");
     });
@@ -81,52 +82,54 @@ describe('Google Chat Service', () => {
       const config = new GoogleChatConfig();
       expect(() =>
         config.setURL(
-          new URL('googlechat://chat.googleapis.com/v1/spaces/FOO/messages?key=bar'),
+          new URL(
+            "googlechat://chat.googleapis.com/v1/spaces/FOO/messages?key=bar",
+          ),
         ),
       ).toThrow("missing field 'token'");
     });
   });
 
-  describe('descriptor', () => {
-    it('should expose both googlechat and hangouts schemes', () => {
-      expect(descriptor.schemes).toContain('googlechat');
-      expect(descriptor.schemes).toContain('hangouts');
-      expect(descriptor.schemes).toEqual(['googlechat', 'hangouts']);
+  describe("descriptor", () => {
+    it("should expose both googlechat and hangouts schemes", () => {
+      expect(descriptor.schemes).toContain("googlechat");
+      expect(descriptor.schemes).toContain("hangouts");
+      expect(descriptor.schemes).toEqual(["googlechat", "hangouts"]);
     });
   });
 
-  describe('sending the payload', () => {
+  describe("sending the payload", () => {
     const expectedURL =
-      'https://chat.googleapis.com/v1/spaces/FOO/messages?key=bar&token=baz';
+      "https://chat.googleapis.com/v1/spaces/FOO/messages?key=bar&token=baz";
 
-    it('should POST the message to the reconstructed webhook URL', async () => {
-      const slot = stubFetch({ status: 200, body: '' });
+    it("should POST the message to the reconstructed webhook URL", async () => {
+      const slot = stubFetch({ status: 200, body: "" });
 
       const service = new GoogleChatService();
       service.initialize(
         new URL(
-          'googlechat://chat.googleapis.com/v1/spaces/FOO/messages?key=bar&token=baz',
+          "googlechat://chat.googleapis.com/v1/spaces/FOO/messages?key=bar&token=baz",
         ),
       );
 
-      await expect(service.send('Message')).resolves.toBeUndefined();
-      expect(slot.captured?.method).toBe('POST');
+      await expect(service.send("Message")).resolves.toBeUndefined();
+      expect(slot.captured?.method).toBe("POST");
       expect(slot.captured?.url).toBe(expectedURL);
-      expect(slot.captured?.body).toBe(JSON.stringify({ text: 'Message' }));
+      expect(slot.captured?.body).toBe(JSON.stringify({ text: "Message" }));
     });
 
-    it('should reject when the server returns an error status', async () => {
-      stubFetch({ status: 400, body: 'bad request' });
+    it("should reject when the server returns an error status", async () => {
+      stubFetch({ status: 400, body: "bad request" });
 
       const service = new GoogleChatService();
       service.initialize(
         new URL(
-          'googlechat://chat.googleapis.com/v1/spaces/FOO/messages?key=bar&token=baz',
+          "googlechat://chat.googleapis.com/v1/spaces/FOO/messages?key=bar&token=baz",
         ),
       );
 
-      await expect(service.send('Message')).rejects.toThrow(
-        'Google Chat API notification returned 400 HTTP status code',
+      await expect(service.send("Message")).rejects.toThrow(
+        "Google Chat API notification returned 400 HTTP status code",
       );
     });
   });

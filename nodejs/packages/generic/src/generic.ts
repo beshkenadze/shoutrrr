@@ -5,19 +5,19 @@ import {
   PropKeyResolver,
   type Service,
   Standard,
-} from '@shoutrrr/core';
+} from "@shoutrrr/core";
 import {
   type Config,
   configFromWebhookURL,
   configSchema,
   defaultConfig,
   Scheme,
-} from './config.ts';
-import { jsonPayload } from './payload.ts';
-import { Templater } from './templater.ts';
+} from "./config.ts";
+import { jsonPayload } from "./payload.ts";
+import { Templater } from "./templater.ts";
 
 /** Common key for the title param (port of Go `types.TitleKey`). */
-const TitleKey = 'title';
+const TitleKey = "title";
 
 /** Service providing a generic notification webhook (scheme `generic`, custom form `generic+https`). */
 export class GenericService implements Service {
@@ -75,7 +75,7 @@ export class GenericService implements Service {
       resolver.updateConfigFromParams(sendParamsInput);
     } catch (err) {
       const reason = err instanceof Error ? err.message : String(err);
-      this.logger.logf('Failed to update params: %v', reason);
+      this.logger.logf("Failed to update params: %v", reason);
     }
 
     const sendParams = createSendParams(config, sendParamsInput, message);
@@ -84,12 +84,17 @@ export class GenericService implements Service {
       await this.doSend(config, sendParams);
     } catch (err) {
       const reason = err instanceof Error ? err.message : String(err);
-      throw new Error(`an error occurred while sending notification to generic webhook: ${reason}`);
+      throw new Error(
+        `an error occurred while sending notification to generic webhook: ${reason}`,
+      );
     }
   }
 
   private cloneConfig(): Config {
-    const config = Object.assign(Object.create(Object.getPrototypeOf(this.config) as object), this.config) as Config;
+    const config = Object.assign(
+      Object.create(Object.getPrototypeOf(this.config) as object),
+      this.config,
+    ) as Config;
     // Shallow copies are sufficient; maps/URL are not mutated during send.
     config.headers = { ...this.config.headers };
     config.extraData = { ...this.config.extraData };
@@ -101,7 +106,7 @@ export class GenericService implements Service {
     const payload = this.getPayload(config, params);
 
     const headers: Record<string, string> = {
-      'Content-Type': config.contentType,
+      "Content-Type": config.contentType,
       Accept: config.contentType,
     };
     for (const [key, value] of Object.entries(config.headers)) {
@@ -116,7 +121,7 @@ export class GenericService implements Service {
     });
     const responseBody = await res.text();
 
-    this.logger.logf('Server response: %s', responseBody);
+    this.logger.logf("Server response: %s", responseBody);
 
     if (res.status >= 300) {
       throw new Error(`server returned response status code ${res.status}`);
@@ -126,10 +131,10 @@ export class GenericService implements Service {
   /** getPayload builds the request body based on the configured template. */
   getPayload(config: Config, params: Params): string {
     switch (config.template) {
-      case '':
-        return params[config.messageKey] ?? '';
-      case 'json':
-      case 'JSON':
+      case "":
+        return params[config.messageKey] ?? "";
+      case "json":
+      case "JSON":
         return jsonPayload(params, config.extraData);
       default: {
         const { template, found } = this.templater.getTemplate(config.template);
@@ -146,7 +151,11 @@ export class GenericService implements Service {
  * createSendParams remaps the title param onto the configured titleKey and injects the message
  * under the configured messageKey. Faithful port of Go `createSendParams`.
  */
-export function createSendParams(config: Config, params: Params, message: string): Params {
+export function createSendParams(
+  config: Config,
+  params: Params,
+  message: string,
+): Params {
   const sendParams: Params = {};
   for (const [key, val] of Object.entries(params)) {
     const target = key === TitleKey ? config.titleKey : key;

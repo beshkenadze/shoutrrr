@@ -1,15 +1,15 @@
 // Port of telegram.go (Service)
 import {
   JsonClient,
-  PropKeyResolver,
-  Standard,
   type Logger,
   type Params,
+  PropKeyResolver,
   type Service,
-} from '@shoutrrr/core';
-import { Client } from './client.js';
-import { Config, fields } from './config.js';
-import { createSendMessagePayload } from './payload.js';
+  Standard,
+} from "@shoutrrr/core";
+import { Client } from "./client.js";
+import { Config, fields } from "./config.js";
+import { createSendMessagePayload } from "./payload.js";
 
 const MAX_LENGTH = 4096;
 
@@ -37,7 +37,7 @@ export class TelegramService implements Service {
   /** GetConfig returns the Config for the service. */
   getConfig(): Config {
     if (!this.config) {
-      throw new Error('service has not been initialized');
+      throw new Error("service has not been initialized");
     }
     return this.config;
   }
@@ -45,8 +45,8 @@ export class TelegramService implements Service {
   /** Send a notification to Telegram. */
   async send(message: string, params?: Params): Promise<void> {
     // Go measures len(message) in UTF-8 bytes, not UTF-16 code units.
-    if (Buffer.byteLength(message, 'utf8') > MAX_LENGTH) {
-      throw new Error('Message exceeds the max length');
+    if (Buffer.byteLength(message, "utf8") > MAX_LENGTH) {
+      throw new Error("Message exceeds the max length");
     }
 
     const base = this.getConfig();

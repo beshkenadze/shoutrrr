@@ -1,6 +1,7 @@
 import type { ConfigProp } from "@shoutrrr/core";
 
-const OPSGENIE_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+const OPSGENIE_ID =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 /** Detects OpsGenie IDs in the form 4513b7ea-3b91-438f-b7e4-e3e54af9147c. */
 export function isOpsGenieID(str: string): boolean {
@@ -69,7 +70,9 @@ export class Entity implements ConfigProp {
     } else if (this.username !== "") {
       identifier = this.username;
     } else {
-      throw new Error("invalid entity, should have either ID, name or username");
+      throw new Error(
+        "invalid entity, should have either ID, name or username",
+      );
     }
     return `${this.type}:${identifier}`;
   }

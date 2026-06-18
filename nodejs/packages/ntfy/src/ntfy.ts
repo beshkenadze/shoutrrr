@@ -1,19 +1,20 @@
 // Ported from Go pkg/services/ntfy/ntfy.go.
-import type { Dispatcher } from 'undici';
+
 import {
   JsonClient,
   type Logger,
   type Params,
-  parseBody,
   PropKeyResolver,
+  parseBody,
   type Service,
   Standard,
-} from '@shoutrrr/core';
-import { Config, fieldSchema } from './config.js';
-import { type ApiResponse, formatApiError } from './payload.js';
-import { priorityEnum } from './priority.js';
+} from "@shoutrrr/core";
+import type { Dispatcher } from "undici";
+import { Config, fieldSchema } from "./config.js";
+import { type ApiResponse, formatApiError } from "./payload.js";
+import { priorityEnum } from "./priority.js";
 
-const VERSION = '0.0.0-nodejs';
+const VERSION = "0.0.0-nodejs";
 
 export interface NtfyServiceOptions {
   /** dispatcher is forwarded to the JSON client (enables undici MockAgent in tests). */
@@ -62,37 +63,37 @@ export class NtfyService implements Service {
 
     // ntfy expects a raw text body and custom headers, not a JSON Content-Type.
     // request() leaves Content-Type unset unless a contentType opt is passed.
-    client.headers['User-Agent'] = `shoutrrr/${VERSION}`;
-    addHeaderIfNotEmpty(client.headers, 'Title', config.title);
+    client.headers["User-Agent"] = `shoutrrr/${VERSION}`;
+    addHeaderIfNotEmpty(client.headers, "Title", config.title);
     addHeaderIfNotEmpty(
       client.headers,
-      'Priority',
+      "Priority",
       priorityEnum.print(config.priority),
     );
-    addHeaderIfNotEmpty(client.headers, 'Tags', config.tags.join(','));
-    addHeaderIfNotEmpty(client.headers, 'Delay', config.delay);
-    addHeaderIfNotEmpty(client.headers, 'Actions', config.actions.join(';'));
-    addHeaderIfNotEmpty(client.headers, 'Click', config.click);
-    addHeaderIfNotEmpty(client.headers, 'Attach', config.attach);
-    addHeaderIfNotEmpty(client.headers, 'X-Icon', config.icon);
-    addHeaderIfNotEmpty(client.headers, 'Filename', config.filename);
-    addHeaderIfNotEmpty(client.headers, 'Email', config.email);
+    addHeaderIfNotEmpty(client.headers, "Tags", config.tags.join(","));
+    addHeaderIfNotEmpty(client.headers, "Delay", config.delay);
+    addHeaderIfNotEmpty(client.headers, "Actions", config.actions.join(";"));
+    addHeaderIfNotEmpty(client.headers, "Click", config.click);
+    addHeaderIfNotEmpty(client.headers, "Attach", config.attach);
+    addHeaderIfNotEmpty(client.headers, "X-Icon", config.icon);
+    addHeaderIfNotEmpty(client.headers, "Filename", config.filename);
+    addHeaderIfNotEmpty(client.headers, "Email", config.email);
 
     if (!config.cache) {
-      client.headers['Cache'] = 'no';
+      client.headers["Cache"] = "no";
     }
     if (!config.firebase) {
-      client.headers['Firebase'] = 'no';
+      client.headers["Firebase"] = "no";
     }
     if (config.markdown) {
-      client.headers['Markdown'] = 'yes';
+      client.headers["Markdown"] = "yes";
     }
 
     let res: Response;
     try {
       // ntfy posts the message as a raw text body with ntfy-specific headers,
       // so use request() (no JSON Content-Type) instead of post().
-      res = await client.request('POST', config.getAPIURL(), { body: message });
+      res = await client.request("POST", config.getAPIURL(), { body: message });
     } catch (err) {
       // Transport error (DNS/connection): no response was produced.
       throw new Error(
@@ -117,7 +118,7 @@ function addHeaderIfNotEmpty(
   key: string,
   value: string,
 ): void {
-  if (value !== '') {
+  if (value !== "") {
     headers[key] = value;
   }
 }

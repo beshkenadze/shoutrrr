@@ -1,5 +1,5 @@
-import type { Params } from '@shoutrrr/core';
-import type { MattermostConfig } from './config.js';
+import type { Params } from "@shoutrrr/core";
+import type { MattermostConfig } from "./config.js";
 
 /** JSON payload for mattermost notifications (port of mattermost_json.go JSON). */
 export interface MattermostJSON {
@@ -20,7 +20,7 @@ export function setIcon(payload: MattermostJSON, icon: string): void {
   delete payload.icon_url;
   delete payload.icon_emoji;
 
-  if (icon !== '') {
+  if (icon !== "") {
     if (ICON_URL_PATTERN.test(icon)) {
       payload.icon_url = icon;
     } else {

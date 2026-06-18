@@ -47,12 +47,12 @@ const emailPattern = /.*@.*\..*/;
  */
 export function newNotePush(message: string, title: string): PushRequest {
   return {
-    type: 'note',
+    type: "note",
     title,
     body: message,
-    email: '',
-    channel_tag: '',
-    device_iden: '',
+    email: "",
+    channel_tag: "",
+    device_iden: "",
   };
 }
 
@@ -67,7 +67,7 @@ export function setTarget(push: PushRequest, target: string): void {
     return;
   }
 
-  if (target.length > 0 && target[0] === '#') {
+  if (target.length > 0 && target[0] === "#") {
     push.channel_tag = target.slice(1);
     return;
   }

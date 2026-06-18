@@ -1,14 +1,15 @@
 // Public entry point for @shoutrrr/ntfy.
-export { Config, Scheme, fieldSchema } from './config.js';
-export { NtfyService, type NtfyServiceOptions } from './ntfy.js';
-export { Priority, priorityEnum, type PriorityValue } from './priority.js';
-export { type ApiResponse, formatApiError } from './payload.js';
-export type { Service, ServiceConfig, Params, Logger } from '@shoutrrr/core';
 
-import { NtfyService } from './ntfy.js';
+export type { Logger, Params, Service, ServiceConfig } from "@shoutrrr/core";
+export { Config, fieldSchema, Scheme } from "./config.js";
+export { NtfyService, type NtfyServiceOptions } from "./ntfy.js";
+export { type ApiResponse, formatApiError } from "./payload.js";
+export { Priority, type PriorityValue, priorityEnum } from "./priority.js";
+
+import { NtfyService } from "./ntfy.js";
 
 /** descriptor registers this service's schemes and factory. */
 export const descriptor = {
-  schemes: ['ntfy'] as const,
+  schemes: ["ntfy"] as const,
   factory: (): NtfyService => new NtfyService(),
 };

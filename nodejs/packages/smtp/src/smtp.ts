@@ -1,11 +1,11 @@
 // Port of Go pkg/services/smtp/smtp.go, using nodemailer for transport.
-import { hostname } from 'node:os';
-import nodemailer from 'nodemailer';
-import { AuthType } from './authType.js';
-import { Config } from './config.js';
-import { useImplicitTLS } from './encMethod.js';
-import { Standard } from '@shoutrrr/core';
-import type { Logger, Params, Service } from '@shoutrrr/core';
+import { hostname } from "node:os";
+import type { Logger, Params, Service } from "@shoutrrr/core";
+import { Standard } from "@shoutrrr/core";
+import nodemailer from "nodemailer";
+import { AuthType } from "./authType.js";
+import { Config } from "./config.js";
+import { useImplicitTLS } from "./encMethod.js";
 
 /**
  * MailMessage is the message envelope handed to a transport (subset of
@@ -39,7 +39,7 @@ export interface TransportOptions {
   auth?: {
     user: string;
     pass: string;
-    type?: 'OAuth2';
+    type?: "OAuth2";
     accessToken?: string;
   };
   authMethod?: string;
@@ -76,7 +76,7 @@ export class SmtpService implements Service {
 
     // Resolve Unknown auth: Plain when a username is present, else None.
     if (config.auth === AuthType.Unknown) {
-      config.auth = config.username !== '' ? AuthType.Plain : AuthType.None;
+      config.auth = config.username !== "" ? AuthType.Plain : AuthType.None;
     }
 
     this.config = config;
@@ -85,7 +85,7 @@ export class SmtpService implements Service {
   /** send delivers the message to all recipients (Go: Service.Send). */
   async send(message: string, params?: Params): Promise<void> {
     if (!this.config) {
-      throw new Error('service not initialized');
+      throw new Error("service not initialized");
     }
 
     const config = this.config.clone();
@@ -106,7 +106,10 @@ export class SmtpService implements Service {
       throw new Error(`error getting SMTP client: ${reason}`);
     }
 
-    this.standard.logf('Mail successfully sent to "%s"!\n', config.toAddresses.join(', '));
+    this.standard.logf(
+      'Mail successfully sent to "%s"!\n',
+      config.toAddresses.join(", "),
+    );
   }
 }
 
@@ -115,13 +118,13 @@ export class SmtpService implements Service {
  * OS hostname; otherwise the configured value is returned verbatim.
  */
 export function resolveClientHost(config: Config): string {
-  if (config.clientHost !== 'auto') {
+  if (config.clientHost !== "auto") {
     return config.clientHost;
   }
   try {
     return hostname();
   } catch {
-    return 'localhost';
+    return "localhost";
   }
 }
 
@@ -154,11 +157,11 @@ export function buildTransportOptions(config: Config): TransportOptions {
       break;
     case AuthType.CRAMMD5:
       options.auth = { user: config.username, pass: config.password };
-      options.authMethod = 'CRAM-MD5';
+      options.authMethod = "CRAM-MD5";
       break;
     case AuthType.OAuth2:
       options.auth = {
-        type: 'OAuth2',
+        type: "OAuth2",
         user: config.username,
         pass: config.password,
         accessToken: config.password,
@@ -175,7 +178,7 @@ export function buildTransportOptions(config: Config): TransportOptions {
 export function buildMessage(config: Config, message: string): MailMessage {
   const mail: MailMessage = {
     from: `${config.fromName} <${config.fromAddress}>`,
-    to: config.toAddresses.join(', '),
+    to: config.toAddresses.join(", "),
     subject: config.subject,
     text: message,
   };

@@ -1,4 +1,3 @@
-import { Config } from './config.js';
 import {
   ApiError,
   JsonClient,
@@ -8,11 +7,12 @@ import {
   PropKeyResolver,
   type Service,
   Standard,
-} from '@shoutrrr/core';
-import { buildPushPayload, type ApiResponse } from './payload.js';
+} from "@shoutrrr/core";
+import { Config } from "./config.js";
+import { type ApiResponse, buildPushPayload } from "./payload.js";
 
 /** Transport dispatcher accepted by the JSON client (e.g. an undici MockAgent). */
-type Dispatcher = NonNullable<JsonClientOptions['dispatcher']>;
+type Dispatcher = NonNullable<JsonClientOptions["dispatcher"]>;
 
 /**
  * BarkService sends notifications to a Bark server, mirroring Go's bark.Service.
@@ -74,7 +74,10 @@ export class BarkService extends Standard implements Service {
 
     let response: ApiResponse;
     try {
-      response = await client.post<ApiResponse>(config.getAPIURL('push'), payload);
+      response = await client.post<ApiResponse>(
+        config.getAPIURL("push"),
+        payload,
+      );
     } catch (err) {
       if (err instanceof ApiError) {
         // Mirror Go's ErrorResponse: when the error body parses into the
@@ -82,8 +85,8 @@ export class BarkService extends Standard implements Service {
         // an empty message as "server response: "). A non-object body (raw
         // text / unparseable) falls through to the raw transport error.
         const body = err.body;
-        if (typeof body === 'object' && body !== null) {
-          const message = (body as Partial<ApiResponse>).message ?? '';
+        if (typeof body === "object" && body !== null) {
+          const message = (body as Partial<ApiResponse>).message ?? "";
           throw new Error(`server response: ${message}`);
         }
       }
@@ -91,7 +94,7 @@ export class BarkService extends Standard implements Service {
     }
 
     if (response.code !== 200) {
-      throw new Error('unknown error');
+      throw new Error("unknown error");
     }
   }
 }

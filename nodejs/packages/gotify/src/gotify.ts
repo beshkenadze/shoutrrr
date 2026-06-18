@@ -1,22 +1,22 @@
 // Port of Go pkg/services/gotify/gotify.go.
 import {
   JsonClient,
-  PropKeyResolver,
-  Standard,
   type Logger,
   type Params,
-} from '@shoutrrr/core';
-import type { Dispatcher } from 'undici';
-import { Config } from './config.js';
+  PropKeyResolver,
+  Standard,
+} from "@shoutrrr/core";
+import type { Dispatcher } from "undici";
+import { Config } from "./config.js";
 import {
   formatErrorResponse,
   isErrorResponse,
   type MessageRequest,
   type MessageResponse,
-} from './payload.js';
+} from "./payload.js";
 
 const TOKEN_CHARS =
-  'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-_';
+  "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-_";
 
 /**
  * isTokenValid mirrors the Gotify server token validation rules.
@@ -26,7 +26,7 @@ export function isTokenValid(token: string): boolean {
   if (token.length !== 15) {
     return false;
   }
-  if (token[0] !== 'A') {
+  if (token[0] !== "A") {
     return false;
   }
   for (const c of token) {
@@ -43,7 +43,7 @@ export function buildURL(config: Config): string {
   if (!isTokenValid(token)) {
     throw new Error(`invalid gotify token "${token}"`);
   }
-  const scheme = config.DisableTLS ? 'http' : 'https';
+  const scheme = config.DisableTLS ? "http" : "https";
   return `${scheme}://${config.Host}${config.Path}/message?token=${token}`;
 }
 
@@ -78,13 +78,13 @@ export class GotifyService extends Standard {
   /** send posts a notification message to Gotify. */
   async send(message: string, params?: Params): Promise<void> {
     if (!this.config || !this.pkr) {
-      throw new Error('service not initialized');
+      throw new Error("service not initialized");
     }
     const config = this.config;
     try {
       this.pkr.updateConfigFromParams(params);
     } catch (err) {
-      this.logf('Failed to update params: %v', err);
+      this.logf("Failed to update params: %v", err);
     }
 
     const postURL = buildURL(config);
@@ -109,7 +109,7 @@ export class GotifyService extends Standard {
     // failure (including a non-JSON 2xx body) as an error. The shared JsonClient
     // tolerates a non-JSON body by returning the raw text, so reject here to keep
     // Go parseResponse parity.
-    if (typeof response !== 'object' || response === null) {
+    if (typeof response !== "object" || response === null) {
       throw new Error(
         `failed to send notification to Gotify: unexpected response body`,
       );

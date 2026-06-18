@@ -21,9 +21,7 @@ const VERSION = "0.0.0";
 /** Builds the top-level commander program. */
 export function createProgram(): Command {
   const program = new Command("shoutrrr");
-  program
-    .description("Shoutrrr CLI")
-    .version(VERSION);
+  program.description("Shoutrrr CLI").version(VERSION);
   program.addCommand(createSendCommand());
   program.addCommand(createVerifyCommand());
   return program;

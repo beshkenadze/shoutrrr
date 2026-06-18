@@ -1,9 +1,9 @@
 // Port of Go pkg/services/googlechat/googlechat_config.go.
-import { EnumlessConfig } from '@shoutrrr/core';
+import { EnumlessConfig } from "@shoutrrr/core";
 
-export const Scheme = 'googlechat';
+export const Scheme = "googlechat";
 
-const DEFAULT_HOST = 'chat.googleapis.com';
+const DEFAULT_HOST = "chat.googleapis.com";
 
 /**
  * Config holds the Google Chat webhook parameters reconstructed from a
@@ -11,21 +11,21 @@ const DEFAULT_HOST = 'chat.googleapis.com';
  */
 export class GoogleChatConfig extends EnumlessConfig {
   host = DEFAULT_HOST;
-  path = '';
-  token = '';
-  key = '';
+  path = "";
+  token = "";
+  key = "";
 
   /** Updates the config from a configuration URL representation. */
   setURL(url: URL): void {
     this.host = url.host;
     this.path = url.pathname;
-    this.key = url.searchParams.get('key') ?? '';
-    this.token = url.searchParams.get('token') ?? '';
+    this.key = url.searchParams.get("key") ?? "";
+    this.token = url.searchParams.get("token") ?? "";
 
-    if (this.key === '') {
+    if (this.key === "") {
       throw new Error("missing field 'key'");
     }
-    if (this.token === '') {
+    if (this.token === "") {
       throw new Error("missing field 'token'");
     }
   }
@@ -37,15 +37,15 @@ export class GoogleChatConfig extends EnumlessConfig {
 
   /** Returns the reconstructed `https://` webhook URL to POST to. */
   getAPIURL(): URL {
-    return this.buildURL('https');
+    return this.buildURL("https");
   }
 
   private buildURL(scheme: string): URL {
     const url = new URL(`${scheme}://${this.host}`);
     url.pathname = this.path;
     // Go's url.Values.Encode sorts keys alphabetically: key, token.
-    url.searchParams.set('key', this.key);
-    url.searchParams.set('token', this.token);
+    url.searchParams.set("key", this.key);
+    url.searchParams.set("token", this.token);
     return url;
   }
 }

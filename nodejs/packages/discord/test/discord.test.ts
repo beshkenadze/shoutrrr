@@ -74,9 +74,7 @@ describe("the discord service", () => {
 
       expect(roundTripped.webhookID).toBe("1");
       expect(roundTripped.token).toBe("dummyToken");
-      expect(config.getURL().toString()).toBe(
-        roundTripped.getURL().toString(),
-      );
+      expect(config.getURL().toString()).toBe(roundTripped.getURL().toString());
     });
 
     it("round-trips the raw (json) path", () => {
@@ -150,14 +148,18 @@ describe("the discord service", () => {
     it("throws for a blank message when split lines is enabled", () => {
       const items: MessageItem[] = [];
       expect(items.length).toBe(0);
-      expect(() => createPayloadFromItems(items, "title", dummyColors)).toThrow();
+      expect(() =>
+        createPayloadFromItems(items, "title", dummyColors),
+      ).toThrow();
     });
 
     it("throws for a blank message when split lines is disabled", () => {
       const batches = createItemsFromPlain("", false);
       const items = batches[0] ?? [];
       expect(items.length).toBe(0);
-      expect(() => createPayloadFromItems(items, "title", dummyColors)).toThrow();
+      expect(() =>
+        createPayloadFromItems(items, "title", dummyColors),
+      ).toThrow();
     });
 
     it("chunks a message that exceeds the max length", () => {

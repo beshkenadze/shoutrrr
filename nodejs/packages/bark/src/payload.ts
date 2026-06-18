@@ -55,11 +55,11 @@ export function buildPushPayload(fields: PushPayloadFields): PushPayload {
     title: fields.title,
     badge: fields.badge,
   };
-  if (fields.sound !== '') payload.sound = fields.sound;
-  if (fields.icon !== '') payload.icon = fields.icon;
-  if (fields.group !== '') payload.group = fields.group;
-  if (fields.url !== '') payload.url = fields.url;
-  if (fields.category !== '') payload.category = fields.category;
-  if (fields.copy !== '') payload.copy = fields.copy;
+  if (fields.sound !== "") payload.sound = fields.sound;
+  if (fields.icon !== "") payload.icon = fields.icon;
+  if (fields.group !== "") payload.group = fields.group;
+  if (fields.url !== "") payload.url = fields.url;
+  if (fields.category !== "") payload.category = fields.category;
+  if (fields.copy !== "") payload.copy = fields.copy;
   return payload;
 }

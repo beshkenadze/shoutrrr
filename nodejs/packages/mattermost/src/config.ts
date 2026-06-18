@@ -3,14 +3,14 @@ import {
   type FieldSchema,
   PropKeyResolver,
   type ServiceConfig,
-} from '@shoutrrr/core';
+} from "@shoutrrr/core";
 
 /** Identifying scheme for the mattermost service. */
-export const SCHEME = 'mattermost';
+export const SCHEME = "mattermost";
 
 /** Error returned when the service URL lacks the required token argument. */
 export const NOT_ENOUGH_ARGUMENTS =
-  'the apiURL does not include enough arguments, either provide 1 or 3 arguments (they may be empty)';
+  "the apiURL does not include enough arguments, either provide 1 or 3 arguments (they may be empty)";
 
 /**
  * Query-prop schema for the mattermost config. Only `icon` (with aliases
@@ -19,16 +19,16 @@ export const NOT_ENOUGH_ARGUMENTS =
  */
 export const QUERY_SCHEMA: FieldSchema[] = [
   {
-    name: 'icon',
-    key: ['icon', 'icon_emoji', 'icon_url'],
-    default: '',
-    desc: 'Use emoji or URL as icon (based on presence of http(s):// prefix)',
+    name: "icon",
+    key: ["icon", "icon_emoji", "icon_url"],
+    default: "",
+    desc: "Use emoji or URL as icon (based on presence of http(s):// prefix)",
   },
   {
-    name: 'title',
-    key: ['title'],
-    default: '',
-    desc: 'Notification title, optionally set by the sender (not used)',
+    name: "title",
+    key: ["title"],
+    default: "",
+    desc: "Notification title, optionally set by the sender (not used)",
   },
 ];
 
@@ -38,17 +38,17 @@ export const QUERY_SCHEMA: FieldSchema[] = [
  */
 export class MattermostConfig extends EnumlessConfig implements ServiceConfig {
   /** Override webhook user (url:user). */
-  userName = '';
+  userName = "";
   /** Use emoji or URL as icon (key:icon,icon_emoji,icon_url). */
-  icon = '';
+  icon = "";
   /** Notification title, set by the sender (not used) (key:title). */
-  title = '';
+  title = "";
   /** Override webhook channel (url:path2). */
-  channel = '';
+  channel = "";
   /** Mattermost server host, including optional port (url:host,port). */
-  host = '';
+  host = "";
   /** Webhook token (url:path1). */
-  token = '';
+  token = "";
 
   private resolver(): PropKeyResolver {
     return new PropKeyResolver(this, QUERY_SCHEMA);
@@ -56,15 +56,15 @@ export class MattermostConfig extends EnumlessConfig implements ServiceConfig {
 
   /** GetURL returns a URL representation of the current field values. */
   getURL(): URL {
-    const paths = ['', this.token];
-    if (this.channel !== '') {
+    const paths = ["", this.token];
+    if (this.channel !== "") {
       paths.push(this.channel);
     }
 
     const url = new URL(`${SCHEME}://placeholder`);
     url.host = this.host;
-    url.pathname = paths.join('/');
-    if (this.userName !== '') {
+    url.pathname = paths.join("/");
+    if (this.userName !== "") {
       url.username = this.userName;
     }
     this.resolver().bindToURL(url);
@@ -80,7 +80,7 @@ export class MattermostConfig extends EnumlessConfig implements ServiceConfig {
   setURLWithResolver(serviceURL: URL, resolver: PropKeyResolver): void {
     this.host = serviceURL.host;
 
-    if (serviceURL.pathname === '' || serviceURL.pathname === '/') {
+    if (serviceURL.pathname === "" || serviceURL.pathname === "/") {
       throw new Error(NOT_ENOUGH_ARGUMENTS);
     }
 
@@ -90,14 +90,14 @@ export class MattermostConfig extends EnumlessConfig implements ServiceConfig {
       resolver.set(key, value);
     }
 
-    const path = serviceURL.pathname.slice(1).split('/');
+    const path = serviceURL.pathname.slice(1).split("/");
     if (path.length < 1) {
       throw new Error(NOT_ENOUGH_ARGUMENTS);
     }
 
-    this.token = path[0] ?? '';
-    if (path.length > 1 && path[1] !== '') {
-      this.channel = path[1] ?? '';
+    this.token = path[0] ?? "";
+    if (path.length > 1 && path[1] !== "") {
+      this.channel = path[1] ?? "";
     }
   }
 }

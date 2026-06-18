@@ -1,11 +1,11 @@
 // Port of pkg/services/slack/slack_token.go
 
-import type { ConfigProp } from '@shoutrrr/core';
-import { ErrorInvalidToken, ErrorMismatchedTokenSeparators } from './errors.js';
+import type { ConfigProp } from "@shoutrrr/core";
+import { ErrorInvalidToken, ErrorMismatchedTokenSeparators } from "./errors.js";
 
-const hookTokenIdentifier = 'hook';
+const hookTokenIdentifier = "hook";
 
-const webhookBase = 'https://hooks.slack.com/services/';
+const webhookBase = "https://hooks.slack.com/services/";
 
 // (?:(?P<type>xox.|hook)[-:]|:?)(?P<p1>[A-Z0-9]{9,})(?P<s1>[-/,])(?P<p2>[A-Z0-9]{9,})(?P<s2>[-/,])(?P<p3>[A-Za-z0-9]{24,})
 const tokenPattern =
@@ -16,7 +16,7 @@ const tokenPattern =
  * Implements ConfigProp (spans url:"user,pass").
  */
 export class Token implements ConfigProp {
-  private raw = '';
+  private raw = "";
 
   /** SetFromProp updates the token state from the passed string. */
   setFromProp(propValue: string): void {
@@ -29,8 +29,8 @@ export class Token implements ConfigProp {
       throw ErrorInvalidToken;
     }
 
-    let typeIdentifier = match[1] ?? '';
-    if (typeIdentifier === '') {
+    let typeIdentifier = match[1] ?? "";
+    if (typeIdentifier === "") {
       typeIdentifier = hookTokenIdentifier;
     }
 
@@ -77,7 +77,7 @@ export class Token implements ConfigProp {
     let out = webhookBase;
     for (let i = 5; i < this.raw.length; i++) {
       const c = this.raw[i];
-      out += c === '-' ? '/' : c;
+      out += c === "-" ? "/" : c;
     }
     return out;
   }

@@ -27,7 +27,9 @@ export function runVerify(rawURL: string): string {
   const service = router.locate(rawURL);
   const introspectable = service as unknown as { getConfig?: () => unknown };
   const config =
-    typeof introspectable.getConfig === "function" ? introspectable.getConfig() : undefined;
+    typeof introspectable.getConfig === "function"
+      ? introspectable.getConfig()
+      : undefined;
   // The full config tree requires CLI-style introspection: a config exposing
   // `configFields()`. Services that expose neither `getConfig()` nor a config
   // with `configFields()` (the externally-ported services, pending the
@@ -36,7 +38,9 @@ export function runVerify(rawURL: string): string {
   const fielded = config as { configFields?: () => unknown } | undefined;
   if (fielded === undefined || typeof fielded.configFields !== "function") {
     // Normalize the scheme the way the router does (strip any "+suffix").
-    const scheme = (new URL(rawURL).protocol.replace(/:$/, "").split("+")[0] ?? "").toLowerCase();
+    const scheme = (
+      new URL(rawURL).protocol.replace(/:$/, "").split("+")[0] ?? ""
+    ).toLowerCase();
     return `Service '${scheme}' URL is valid.\n`;
   }
   const fields = getConfigFormat(config as ServiceConfig);

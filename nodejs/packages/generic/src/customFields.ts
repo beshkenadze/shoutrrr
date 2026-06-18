@@ -5,7 +5,7 @@
  * `KEY_PREFIX` ('__') to escape webhook query keys that collide with config
  * prop keys.
  */
-import { KEY_PREFIX, type PropKeyResolver } from '@shoutrrr/core';
+import { KEY_PREFIX, type PropKeyResolver } from "@shoutrrr/core";
 
 /** EscapeKey prefixes a config-prop-colliding custom query key. */
 function escapeKey(key: string): string {
