@@ -1,9 +1,12 @@
 // Port of Go pkg/services/smtp/smtp_config.go.
 import { AuthType, authTypeFormatter } from './authType.js';
 import { Encryption, encryptionFormatter } from './encMethod.js';
-import type { FieldSchema } from './core/format.js';
-import { PropKeyResolver } from './core/propKeyResolver.js';
-import type { EnumFormatter, ServiceConfig } from './core/types.js';
+import { PropKeyResolver } from '@shoutrrr/core';
+import type {
+  EnumFormatter,
+  FieldSchema,
+  ServiceConfig,
+} from '@shoutrrr/core';
 
 /** Scheme is the identifying part of this service's configuration URL. */
 export const Scheme = 'smtp';
@@ -65,11 +68,7 @@ export class Config implements ServiceConfig {
    */
   private resolver(): PropKeyResolver {
     if (!this.pkr) {
-      this.pkr = new PropKeyResolver(
-        this as unknown as Record<string, unknown>,
-        smtpFieldSchema,
-        this.enums(),
-      );
+      this.pkr = new PropKeyResolver(this, smtpFieldSchema);
     }
     return this.pkr;
   }
@@ -109,7 +108,22 @@ export class Config implements ServiceConfig {
       }
     }
 
-    this.resolver().setFromURL(url);
+    // Apply query params (host/user/pass/port handled above). Go iterates
+    // url.Query() and uses vals[0], so repeated keys are first-wins; resolver.set
+    // lowercases the key, so query keys match case-insensitively. We dedup here
+    // because core's setFromURL is case-sensitive and last-wins for repeats.
+    const resolver = this.resolver();
+    const seen = new Set<string>();
+    for (const key of url.searchParams.keys()) {
+      if (seen.has(key)) {
+        continue;
+      }
+      seen.add(key);
+      const first = url.searchParams.get(key);
+      if (first !== null) {
+        resolver.set(key, first);
+      }
+    }
 
     if (this.fromAddress.length < 1) {
       throw new Error('fromAddress missing from config URL');
@@ -146,6 +160,13 @@ export class Config implements ServiceConfig {
 
   /** updateFromParams applies send-time param overrides (Go: PropKeyResolver.UpdateConfigFromParams). */
   updateFromParams(params?: Record<string, string>): Error | undefined {
-    return this.resolver().updateConfigFromParams(params);
+    // core's updateConfigFromParams throws the first error; the caller expects it
+    // returned, so adapt throw -> return here.
+    try {
+      this.resolver().updateConfigFromParams(params);
+      return undefined;
+    } catch (err) {
+      return err instanceof Error ? err : new Error(String(err));
+    }
   }
 }
