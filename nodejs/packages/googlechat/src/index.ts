@@ -1,9 +1,9 @@
-import { GoogleChatService } from './googlechat.js';
-import type { Service } from './core/types.js';
+import { GoogleChatService } from './googlechat.ts';
+import type { Service } from '@shoutrrr/core';
 
-export { GoogleChatService } from './googlechat.js';
-export { GoogleChatConfig, Scheme } from './config.js';
-export type { Service, Params, Logger } from './core/types.js';
+export { GoogleChatService } from './googlechat.ts';
+export { GoogleChatConfig, Scheme } from './config.ts';
+export type { Service, Params, Logger } from '@shoutrrr/core';
 
 export interface ServiceDescriptor {
   schemes: string[];
