@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
+import type { FetchLike } from '@shoutrrr/core';
 import { Config, createConfigFromURL } from '../src/config.js';
-import type { FetchLike } from '../src/core/jsonclient.js';
 import { ErrorInvalidToken } from '../src/errors.js';
 import { createJSONPayload, MessagePayload } from '../src/payload.js';
 import { SlackService } from '../src/slack.js';
@@ -60,6 +60,18 @@ describe('the slack config', () => {
     it('is identical after de-/serialization (new format)', () => {
       const testURL =
         'slack://hook:AAAAAAAAA-BBBBBBBBB-123456789123456789123456@webhook?botname=testbot&color=3f00fe&title=Test+title';
+
+      const config = new Config();
+      config.setURL(new URL(testURL));
+      expect(config.getURL().toString()).toBe(testURL);
+    });
+
+    it('round-trips query values with Go-faithful escaping (* ( ) not WHATWG)', () => {
+      // '*', '(', ')' are escaped by Go's url.QueryEscape (%2A, %28, %29) but
+      // left literal by WHATWG URLSearchParams. The serialized URL must keep the
+      // Go form so it matches the reference implementation.
+      const testURL =
+        'slack://hook:AAAAAAAAA-BBBBBBBBB-123456789123456789123456@webhook?title=a%2Ab%28c%29';
 
       const config = new Config();
       config.setURL(new URL(testURL));
