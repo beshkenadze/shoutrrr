@@ -6,7 +6,7 @@ export type {
   Params,
   Service,
   ServiceConfig,
-} from './core/types.js';
+} from '@shoutrrr/core';
 
 import { Scheme } from './config.js';
 import { LoggerService } from './logger.js';

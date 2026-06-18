@@ -1,7 +1,7 @@
 // Port of Go pkg/services/logger/logger.go
 import { Config } from './config.js';
-import { Standard } from './core/standard.js';
-import type { Logger, Params, Service } from './core/types.js';
+import { Standard } from '@shoutrrr/core';
+import type { Logger, Params, Service } from '@shoutrrr/core';
 
 /**
  * Minimal faithful subset of Go's text/template for the logger service.
@@ -31,6 +31,13 @@ class MessageTemplate {
   }
 }
 
+/** A Logger that drops everything, mirroring Go util.DiscardLogger. */
+const discardLogger: Logger = {
+  logf(): void {
+    /* no-op */
+  },
+};
+
 /** LoggerService writes notification messages to an injected Logger. */
 export class LoggerService extends Standard implements Service {
   private config: Config = new Config();
@@ -38,7 +45,9 @@ export class LoggerService extends Standard implements Service {
 
   /** Initialize sets the logger and resets the config. The URL is unused. */
   initialize(url: URL, logger?: Logger): void {
-    this.setLogger(logger);
+    // Always (re)assign the logger so a re-initialize without a logger resets
+    // to discard, mirroring Go's Initialize → SetLogger(nil) → DiscardLogger.
+    this.setLogger(logger ?? discardLogger);
     this.config = new Config();
     this.config.setURL(url);
     this.template = undefined;

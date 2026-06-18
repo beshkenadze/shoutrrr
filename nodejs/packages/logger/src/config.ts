@@ -1,7 +1,7 @@
 // Port of Go pkg/services/logger/logger_config.go
-import type { FieldSchema } from './core/format.js';
-import { EnumlessConfig } from './core/standard.js';
-import type { ServiceConfig } from './core/types.js';
+import type { FieldSchema } from '@shoutrrr/core';
+import { EnumlessConfig } from '@shoutrrr/core';
+import type { ServiceConfig } from '@shoutrrr/core';
 
 /** Scheme is the identifying part of this service's configuration URL. */
 export const Scheme = 'logger';
