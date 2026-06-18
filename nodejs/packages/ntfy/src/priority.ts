@@ -1,6 +1,5 @@
 // Ported from Go pkg/services/ntfy/ntfy_priority.go.
-import { createEnumFormatter } from './core/enumFormatter.js';
-import type { EnumFormatter } from './core/types.js';
+import { createEnumFormatter, type EnumFormatter } from '@shoutrrr/core';
 
 /** Priority enum integer values. */
 export const Priority = {

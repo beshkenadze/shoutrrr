@@ -163,6 +163,7 @@
       "name": "@shoutrrr/ntfy",
       "version": "0.0.0",
       "dependencies": {
+        "@shoutrrr/core": "workspace:*",
         "undici": "^8.5.0",
       },
       "devDependencies": {
