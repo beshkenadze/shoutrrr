@@ -1,14 +1,14 @@
-import { OpsgenieService } from "./opsgenie.js";
+import { OpsgenieService } from "./opsgenie.ts";
 
-export { OpsgenieService } from "./opsgenie.js";
-export { Config, Scheme, defaultHost, defaultPort } from "./config.js";
+export { OpsgenieService } from "./opsgenie.ts";
+export { Config, Scheme, defaultHost, defaultPort } from "./config.ts";
 export {
   type AlertPayload,
   Entity,
   isOpsGenieID,
   serializeAlertPayload,
-} from "./payload.js";
-export type { Service, Params, Logger } from "./core/types.js";
+} from "./payload.ts";
+export type { Service, Params, Logger } from "@shoutrrr/core";
 
 /** Service descriptor for registry-based discovery. */
 export const descriptor = {
