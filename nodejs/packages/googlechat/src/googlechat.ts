@@ -1,9 +1,8 @@
 // Port of Go pkg/services/googlechat/googlechat.go.
 import type { Dispatcher } from 'undici';
-import { ApiError, JsonClient } from './core/jsonclient.js';
-import { Standard } from './core/standard.js';
-import type { Logger, Params, Service } from './core/types.js';
-import { GoogleChatConfig } from './config.js';
+import { ApiError, JsonClient, Standard } from '@shoutrrr/core';
+import type { Logger, Params, Service } from '@shoutrrr/core';
+import { GoogleChatConfig } from './config.ts';
 
 /** JSON is the actual payload being sent to the Google Chat API. */
 interface GoogleChatPayload {
@@ -28,7 +27,9 @@ export class GoogleChatService extends Standard implements Service {
 
   /** Loads config from the configuration URL and sets the logger. */
   initialize(url: URL, logger?: Logger): void {
-    this.setLogger(logger);
+    if (logger) {
+      this.setLogger(logger);
+    }
     const config = new GoogleChatConfig();
     config.setURL(url);
     this.config = config;

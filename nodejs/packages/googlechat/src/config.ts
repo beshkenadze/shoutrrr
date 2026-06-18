@@ -1,5 +1,5 @@
 // Port of Go pkg/services/googlechat/googlechat_config.go.
-import { EnumlessConfig } from './core/standard.js';
+import { EnumlessConfig } from '@shoutrrr/core';
 
 export const Scheme = 'googlechat';
 

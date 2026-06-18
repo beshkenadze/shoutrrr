@@ -1,13 +1,45 @@
 import { describe, it, expect, afterEach } from 'bun:test';
-// Bun's built-in `undici` shim lacks a working MockAgent; import the real one
-// from the installed package's submodule, which loads cleanly under Bun.
-// @ts-expect-error - no type declarations for the deep submodule path.
-import MockAgent from 'undici/lib/mock/mock-agent.js';
-// @ts-expect-error - no type declarations for the deep submodule path.
-import { setGlobalDispatcher, getGlobalDispatcher } from 'undici/lib/global.js';
-import { GoogleChatConfig } from '../src/config.js';
-import { GoogleChatService } from '../src/googlechat.js';
-import { descriptor } from '../src/index.js';
+import { GoogleChatConfig } from '../src/config.ts';
+import { GoogleChatService } from '../src/googlechat.ts';
+import { descriptor } from '../src/index.ts';
+
+const realFetch = globalThis.fetch;
+
+interface CapturedRequest {
+  url: string;
+  method?: string;
+  body?: string;
+}
+
+/**
+ * Installs a fake `fetch` that records the request and returns `response`.
+ * Bun's built-in `undici` shim ignores custom dispatchers, so the service tests
+ * exercise core's default `fetch` transport via a global override instead of a
+ * MockAgent — same assertions (POST to the reconstructed webhook URL + JSON
+ * body; 200 resolves, error rejects). Restored in `afterEach`.
+ */
+function stubFetch(response: {
+  status: number;
+  body: string;
+}): { captured?: CapturedRequest } {
+  const slot: { captured?: CapturedRequest } = {};
+  globalThis.fetch = (async (
+    input: Parameters<typeof fetch>[0],
+    init?: RequestInit,
+  ): Promise<Response> => {
+    slot.captured = {
+      url: String(input),
+      method: init?.method,
+      body: init?.body === undefined ? undefined : String(init.body),
+    };
+    return new Response(response.body, { status: response.status });
+  }) as typeof fetch;
+  return slot;
+}
+
+afterEach(() => {
+  globalThis.fetch = realFetch;
+});
 
 describe('Google Chat Service', () => {
   it('should build a valid Google Chat Incoming Webhook URL', () => {
@@ -64,54 +96,29 @@ describe('Google Chat Service', () => {
   });
 
   describe('sending the payload', () => {
-    let mockAgent: InstanceType<typeof MockAgent> | undefined;
+    const expectedURL =
+      'https://chat.googleapis.com/v1/spaces/FOO/messages?key=bar&token=baz';
 
-    afterEach(async () => {
-      if (mockAgent) {
-        await mockAgent.close();
-        mockAgent = undefined;
-      }
-    });
+    it('should POST the message to the reconstructed webhook URL', async () => {
+      const slot = stubFetch({ status: 200, body: '' });
 
-    it('should not report an error if the server accepts the payload', async () => {
-      mockAgent = new MockAgent();
-      mockAgent.disableNetConnect();
-
-      const pool = mockAgent.get('https://chat.googleapis.com');
-      pool
-        .intercept({
-          path: '/v1/spaces/FOO/messages?key=bar&token=baz',
-          method: 'POST',
-          body: JSON.stringify({ text: 'Message' }),
-        })
-        .reply(200, '');
-
-      const config = new GoogleChatConfig();
-      config.host = 'chat.googleapis.com';
-      config.path = '/v1/spaces/FOO/messages';
-      config.key = 'bar';
-      config.token = 'baz';
-
-      const service = new GoogleChatService({ dispatcher: mockAgent });
-      service.initialize(config.getURL());
+      const service = new GoogleChatService();
+      service.initialize(
+        new URL(
+          'googlechat://chat.googleapis.com/v1/spaces/FOO/messages?key=bar&token=baz',
+        ),
+      );
 
       await expect(service.send('Message')).resolves.toBeUndefined();
-      mockAgent.assertNoPendingInterceptors();
+      expect(slot.captured?.method).toBe('POST');
+      expect(slot.captured?.url).toBe(expectedURL);
+      expect(slot.captured?.body).toBe(JSON.stringify({ text: 'Message' }));
     });
 
     it('should reject when the server returns an error status', async () => {
-      mockAgent = new MockAgent();
-      mockAgent.disableNetConnect();
+      stubFetch({ status: 400, body: 'bad request' });
 
-      const pool = mockAgent.get('https://chat.googleapis.com');
-      pool
-        .intercept({
-          path: '/v1/spaces/FOO/messages?key=bar&token=baz',
-          method: 'POST',
-        })
-        .reply(400, 'bad request');
-
-      const service = new GoogleChatService({ dispatcher: mockAgent });
+      const service = new GoogleChatService();
       service.initialize(
         new URL(
           'googlechat://chat.googleapis.com/v1/spaces/FOO/messages?key=bar&token=baz',
@@ -121,37 +128,6 @@ describe('Google Chat Service', () => {
       await expect(service.send('Message')).rejects.toThrow(
         'Google Chat API notification returned 400 HTTP status code',
       );
-    });
-
-    it('should use the global dispatcher when none is injected', async () => {
-      const previous = getGlobalDispatcher();
-      mockAgent = new MockAgent();
-      mockAgent.disableNetConnect();
-      setGlobalDispatcher(mockAgent);
-
-      try {
-        const pool = mockAgent.get('https://chat.googleapis.com');
-        pool
-          .intercept({
-            path: '/v1/spaces/FOO/messages?key=bar&token=baz',
-            method: 'POST',
-            body: JSON.stringify({ text: 'Message' }),
-          })
-          .reply(200, '');
-
-        // No dispatcher injected: exercises the getGlobalDispatcher() default.
-        const service = new GoogleChatService();
-        service.initialize(
-          new URL(
-            'googlechat://chat.googleapis.com/v1/spaces/FOO/messages?key=bar&token=baz',
-          ),
-        );
-
-        await expect(service.send('Message')).resolves.toBeUndefined();
-        mockAgent.assertNoPendingInterceptors();
-      } finally {
-        setGlobalDispatcher(previous);
-      }
     });
   });
 });
