@@ -219,7 +219,8 @@ describe("sending the payload", () => {
     service.initialize(config.getURL());
     await service.send("Hello");
 
-    const query = captured.value!.query;
+    if (!captured.value) throw new Error("expected a captured request");
+    const query = captured.value.query;
     expect(query.get("apikey")).toBe("apikey");
     expect(query.get("deviceIds")).toBe("dev1,dev2");
     expect(query.get("text")).toBe("Hello");
@@ -254,7 +255,8 @@ describe("sending the payload", () => {
     service.initialize(config.getURL());
     await service.send("Hello", { title: "param title", icon: "param icon" });
 
-    const query = captured.value!.query;
+    if (!captured.value) throw new Error("expected a captured request");
+    const query = captured.value.query;
     expect(query.get("title")).toBe("param title");
     expect(query.get("icon")).toBe("param icon");
   });

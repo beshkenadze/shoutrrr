@@ -94,12 +94,13 @@ export class MatrixService implements Service {
 
     const errors = await this.client.sendMessage(message, this.config.rooms);
 
-    if (errors.length > 0) {
+    const [firstError] = errors;
+    if (firstError) {
       for (const err of errors) {
         this.standard.logf("error sending message: %s", err.message);
       }
       throw new Error(
-        `${errors.length} error(s) sending message, with initial error: ${errors[0]!.message}`,
+        `${errors.length} error(s) sending message, with initial error: ${firstError.message}`,
       );
     }
   }

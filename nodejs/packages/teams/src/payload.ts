@@ -46,7 +46,7 @@ export function buildPayload(
   // Teams needs a summary for the webhook; use the title or the (truncated) first line.
   let summary = title;
   if (summary === "" && sections.length > 0) {
-    summary = sections[0]!.text ?? "";
+    summary = sections[0]?.text ?? "";
     if (summary.length > 20) {
       // Go: summary[:21] keeps the first 21 bytes.
       summary = summary.slice(0, 21);

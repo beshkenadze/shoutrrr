@@ -53,10 +53,16 @@ export function verifyWebhookParts(p: WebhookParts): void {
 /** Extracts and verifies the four webhook parts from a full webhook URL (Go: parseAndVerifyWebhookURL). */
 export function parseAndVerifyWebhookURL(webhookURL: string): WebhookParts {
   const groups = webhookURLPattern.exec(webhookURL);
-  if (!groups) {
+  const [, group, tenant, altID, groupOwner] = groups ?? [];
+  if (
+    group === undefined ||
+    tenant === undefined ||
+    altID === undefined ||
+    groupOwner === undefined
+  ) {
     throw new Error("invalid webhook URL format");
   }
-  return [groups[1]!, groups[2]!, groups[3]!, groups[4]!];
+  return [group, tenant, altID, groupOwner];
 }
 
 /** Builds the full Teams webhook URL from its parts (Go: buildWebhookURL). */
@@ -135,10 +141,11 @@ export class Config extends EnumlessConfig implements ServiceConfig {
     if (password !== "") {
       // Legacy format: user is "group@tenant" with the AltID as the password.
       const parts = decodeURIComponent(url.username).split("@");
-      if (parts.length !== 2) {
+      const [group, tenant] = parts;
+      if (parts.length !== 2 || group === undefined || tenant === undefined) {
         throw new Error("invalid URL format");
       }
-      webhookParts = [parts[0]!, parts[1]!, password, url.hostname];
+      webhookParts = [group, tenant, password, url.hostname];
     } else {
       const segments = trimLeadingSlash(url.pathname).split("/");
       webhookParts = [

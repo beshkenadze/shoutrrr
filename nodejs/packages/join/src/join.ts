@@ -51,8 +51,8 @@ export class JoinService extends Standard {
       throw new Error("service not initialized");
     }
 
-    const title = params?.["title"] ?? config.title;
-    const icon = params?.["icon"] ?? config.icon;
+    const title = params?.title ?? config.title;
+    const icon = params?.icon ?? config.icon;
     const devices = config.devices.join(",");
 
     await this.sendToDevices(config.apiKey, devices, message, title, icon);

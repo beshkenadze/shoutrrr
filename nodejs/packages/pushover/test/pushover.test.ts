@@ -6,8 +6,6 @@ import {
   UserMissing,
 } from "../src/index.js";
 
-const hookURL = "https://api.pushover.net/1/messages.json";
-
 /** createURL mirrors the Go test helper: username "Token", host=user, pass=token. */
 function createURL(user: string, token: string): URL {
   return new URL(`pushover://Token:${encodeURIComponent(token)}@${user}`);
@@ -177,11 +175,12 @@ describe("sending the payload", () => {
     await service.send("Message");
 
     expect(captured).not.toBeNull();
-    expect(captured!.method).toBe("POST");
-    expect(captured!.path).toBe("/1/messages.json");
-    expect(captured!.contentType).toBe("application/x-www-form-urlencoded");
+    if (!captured) throw new Error("expected a captured request");
+    expect(captured.method).toBe("POST");
+    expect(captured.path).toBe("/1/messages.json");
+    expect(captured.contentType).toBe("application/x-www-form-urlencoded");
 
-    const params = new URLSearchParams(captured!.body);
+    const params = new URLSearchParams(captured.body);
     expect(params.get("user")).toBe("usertoken");
     expect(params.get("token")).toBe("apptoken");
     expect(params.get("message")).toBe("Message");
@@ -195,7 +194,8 @@ describe("sending the payload", () => {
     );
     await service.send("Message");
 
-    const params = new URLSearchParams(captured!.body);
+    if (!captured) throw new Error("expected a captured request");
+    const params = new URLSearchParams(captured.body);
     expect(params.get("device")).toBe("a,b");
     expect(params.get("title")).toBe("Hi");
     expect(params.get("priority")).toBe("1");
@@ -206,7 +206,8 @@ describe("sending the payload", () => {
     service.initialize(new URL("pushover://:apptoken@usertoken"));
     await service.send("Message", { title: "Override", devices: "x,y" });
 
-    const params = new URLSearchParams(captured!.body);
+    if (!captured) throw new Error("expected a captured request");
+    const params = new URLSearchParams(captured.body);
     expect(params.get("title")).toBe("Override");
     expect(params.get("device")).toBe("x,y");
   });

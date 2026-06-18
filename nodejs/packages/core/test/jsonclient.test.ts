@@ -97,8 +97,8 @@ describe("JsonClient", () => {
   it("allows custom headers to be set on the client", async () => {
     const slot = stubFetch({ status: 200, body: "{}" });
     const client = new JsonClient();
-    client.headers["Authorization"] = "Bearer t";
+    client.headers.Authorization = "Bearer t";
     await client.post("https://api.example.com/x", {});
-    expect(slot.captured?.headers["Authorization"]).toBe("Bearer t");
+    expect(slot.captured?.headers.Authorization).toBe("Bearer t");
   });
 });

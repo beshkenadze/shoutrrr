@@ -207,14 +207,16 @@ describe("matrix client (real local HTTP server)", () => {
     await service.send("Test message", undefined);
     const sends = active.captured.filter((c) => c.method === "PUT");
     expect(sends.length).toBe(1);
-    expect(JSON.parse(sends[0]!.body)).toEqual({
+    const send = sends[0];
+    if (!send) throw new Error("expected a captured send");
+    expect(JSON.parse(send.body)).toEqual({
       msgtype: "m.text",
       body: "Test message",
     });
     // joined room id "!room:mockserver" must be path-escaped exactly like Go.
-    expect(sends[0]!.rawPath).toContain("/rooms/%21room:mockserver/send/");
-    expect(sends[0]!.rawPath).toContain("shoutrrr-1");
-    expect(sends[0]!.rawPath).toContain("access_token=TOKEN");
+    expect(send.rawPath).toContain("/rooms/%21room:mockserver/send/");
+    expect(send.rawPath).toContain("shoutrrr-1");
+    expect(send.rawPath).toContain("access_token=TOKEN");
   });
 
   test("sends to explicit rooms, joining aliases first", async () => {
@@ -232,8 +234,10 @@ describe("matrix client (real local HTTP server)", () => {
     const sends = active.captured.filter((c) => c.method === "PUT");
     expect(joins.length).toBe(2);
     expect(sends.length).toBe(2);
-    expect(joins[0]!.rawPath).toContain("/join/%23room1");
-    expect(joins[1]!.rawPath).toContain("/join/%23room2");
+    const [join1, join2] = joins;
+    if (!join1 || !join2) throw new Error("expected two captured joins");
+    expect(join1.rawPath).toContain("/join/%23room1");
+    expect(join2.rawPath).toContain("/join/%23room2");
   });
 
   test("reports an error when one room cannot be joined", async () => {
@@ -259,7 +263,8 @@ describe("matrix client (real local HTTP server)", () => {
         c.method === "POST" && c.rawPath.startsWith("/_matrix/client/r0/login"),
     );
     expect(loginPost).toBeDefined();
-    const body = JSON.parse(loginPost!.body);
+    if (!loginPost) throw new Error("expected a captured login POST");
+    const body = JSON.parse(loginPost.body);
     expect(body.type).toBe("m.login.password");
     expect(body.device_id).toBe(defaultDeviceID);
     expect(body.password).toBe("pass");
@@ -347,8 +352,9 @@ describe("matrix regressions", () => {
       await service.send("hi", undefined);
       const send = captured.find((c) => c.rawPath.includes("/send/"));
       expect(send).toBeDefined();
+      if (!send) throw new Error("expected a captured send");
       // '$' and '&' are kept literal (Go encodePath); '!' becomes %21.
-      expect(send!.rawPath).toContain("/rooms/%21ev$il&room:srv/send/");
+      expect(send.rawPath).toContain("/rooms/%21ev$il&room:srv/send/");
     } finally {
       server.stop(true);
     }

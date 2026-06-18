@@ -80,13 +80,13 @@ export class NtfyService implements Service {
     addHeaderIfNotEmpty(client.headers, "Email", config.email);
 
     if (!config.cache) {
-      client.headers["Cache"] = "no";
+      client.headers.Cache = "no";
     }
     if (!config.firebase) {
-      client.headers["Firebase"] = "no";
+      client.headers.Firebase = "no";
     }
     if (config.markdown) {
-      client.headers["Markdown"] = "yes";
+      client.headers.Markdown = "yes";
     }
 
     let res: Response;

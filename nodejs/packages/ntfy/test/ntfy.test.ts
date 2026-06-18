@@ -208,11 +208,13 @@ describe("sending the push payload", () => {
     await service.send("Message");
 
     expect(calls).toHaveLength(1);
-    expect(calls[0]!.method).toBe("POST");
-    expect(calls[0]!.url).toBe("https://:devicekey@hostname/mytopic");
-    expect(calls[0]!.body).toBe("Message");
+    const call = calls[0];
+    if (!call) throw new Error("expected a captured call");
+    expect(call.method).toBe("POST");
+    expect(call.url).toBe("https://:devicekey@hostname/mytopic");
+    expect(call.body).toBe("Message");
     // ntfy expects a raw body, not application/json.
-    expect(calls[0]!.headers["Content-Type"]).toBeUndefined();
+    expect(call.headers["Content-Type"]).toBeUndefined();
   });
 
   test("rejects when the server returns an error", async () => {
@@ -246,6 +248,8 @@ describe("sending the push payload", () => {
     service.initialize(new URL("ntfy://:devicekey@hostname"));
     await service.send("Message", { priority: "Max" });
 
-    expect(calls[0]!.headers["Priority"]).toBe("Max");
+    const call = calls[0];
+    if (!call) throw new Error("expected a captured call");
+    expect(call.headers.Priority).toBe("Max");
   });
 });

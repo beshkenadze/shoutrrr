@@ -23,8 +23,6 @@ export const SCHEME = "logger";
  * Port of logger.Config (embeds standard.EnumlessConfig). It has no URL fields.
  */
 class LoggerConfig implements ServiceConfig {
-  private url: URL = new URL(`${SCHEME}://`);
-
   getURL(): URL {
     // Port of logger.Config.GetURL — only the scheme is meaningful.
     return new URL(`${SCHEME}://`);

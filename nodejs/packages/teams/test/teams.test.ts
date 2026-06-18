@@ -179,10 +179,12 @@ describe("the teams service", () => {
       await service.send("Message");
 
       expect(calls).toHaveLength(1);
-      expect(calls[0]!.method).toBe("POST");
-      expect(calls[0]!.url).toBe(scopedPostURL);
+      const call = calls[0];
+      if (!call) throw new Error("expected a captured call");
+      expect(call.method).toBe("POST");
+      expect(call.url).toBe(scopedPostURL);
 
-      const parsed = JSON.parse(calls[0]!.body) as Record<string, unknown>;
+      const parsed = JSON.parse(call.body) as Record<string, unknown>;
       expect(parsed["@type"]).toBe("MessageCard");
       expect(parsed.summary).toBe("Message");
     });
@@ -195,8 +197,10 @@ describe("the teams service", () => {
       await expect(service.send("Message")).rejects.toThrow();
 
       expect(calls).toHaveLength(1);
-      expect(calls[0]!.method).toBe("POST");
-      expect(calls[0]!.url).toBe(legacyPostURL);
+      const call = calls[0];
+      if (!call) throw new Error("expected a captured call");
+      expect(call.method).toBe("POST");
+      expect(call.url).toBe(legacyPostURL);
     });
   });
 });
