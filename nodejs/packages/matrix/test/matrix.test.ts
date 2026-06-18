@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, test } from 'bun:test';
+import { PropKeyResolver } from '@shoutrrr/core';
 import { Config, defaultDeviceID, matrixFields } from '../src/config.js';
 import { MatrixService } from '../src/matrix.js';
-import { PropKeyResolver } from '../src/core/propKeyResolver.js';
-import { escapePathSegment } from '../src/core/urlpath.js';
+import { escapePathSegment } from '../src/urlpath.js';
 
 // ---------------------------------------------------------------------------
 // Config / URL round-trip (mirrors matrix_test.go "creating configurations")
@@ -37,6 +37,17 @@ describe('matrix config', () => {
     expect(config.getURLString()).toBe(testURL);
   });
 
+  test('non-default disableTLS/deviceID survive serialization round-trip', () => {
+    const config = new Config();
+    config.setURL(
+      new URL('matrix://user:pass@mockserver?disableTLS=Yes&deviceID=dev2&rooms=room1'),
+    );
+    const restored = new Config();
+    restored.setURL(new URL(config.getURLString()));
+    expect(restored.disableTLS).toBe(true);
+    expect(restored.deviceID).toBe('dev2');
+  });
+
   test('prepends # to bare room aliases but not to IDs', () => {
     const config = new Config();
     config.setURL(new URL('matrix://user:pass@mockserver?rooms=room1,%23room2,%21id:server'));
@@ -59,10 +70,7 @@ describe('matrix config', () => {
 
   test('QueryFields returns 5 keys (matches Go TestConfigGetFieldsCount)', () => {
     const config = new Config();
-    const resolver = new PropKeyResolver(
-      config as unknown as Record<string, unknown>,
-      matrixFields,
-    );
+    const resolver = new PropKeyResolver(config, matrixFields);
     expect(resolver.queryFields().length).toBe(5);
   });
 
@@ -85,9 +93,9 @@ describe('escapePathSegment', () => {
 
 // ---------------------------------------------------------------------------
 // HTTP login -> send sequence against a real local server (Bun.serve).
-// Bun's bundled undici lacks a working MockAgent, so we exercise the full
-// client->HTTP->server path instead. This validates request paths and bodies
-// exactly. Live/remote network is NOT required (note skipped-live in PR).
+// Core's JsonClient uses the global fetch, so we exercise the full
+// client->HTTP->server path instead of mocking the transport. This validates
+// request paths and bodies exactly. Live/remote network is NOT required.
 // Mirrors matrix_test.go setupMockResponders behavior.
 // ---------------------------------------------------------------------------
 interface Captured {

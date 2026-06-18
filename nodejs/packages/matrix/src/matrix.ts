@@ -2,8 +2,7 @@
 import type { Dispatcher } from 'undici';
 import { MatrixClient } from './client.js';
 import { Config, Scheme } from './config.js';
-import { Standard } from './core/standard.js';
-import type { Logger, Params, Service } from './core/types.js';
+import { Standard, type Logger, type Params, type Service } from '@shoutrrr/core';
 
 export { Scheme };
 
@@ -26,7 +25,9 @@ export class MatrixService implements Service {
 
   setLogger(logger?: Logger): void {
     this.logger = logger;
-    this.standard.setLogger(logger);
+    if (logger) {
+      this.standard.setLogger(logger);
+    }
   }
 
   // initialize parses the config URL and constructs the client. Per the SDK

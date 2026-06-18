@@ -1,9 +1,7 @@
 // Matrix API client — port of Go matrix_client.go.
 import type { Dispatcher } from 'undici';
-import { JsonClient } from './core/jsonclient.js';
-import { discardLogger } from './core/standard.js';
-import type { Logger } from './core/types.js';
-import { escapePathSegment } from './core/urlpath.js';
+import { JsonClient, type Logger } from '@shoutrrr/core';
+import { escapePathSegment } from './urlpath.js';
 import {
   accessTokenKey,
   apiJoinedRooms,
@@ -25,6 +23,13 @@ import {
 export interface MatrixClientOptions {
   dispatcher?: Dispatcher;
 }
+
+// No-op logger used when none is provided (core does not export one).
+const discardLogger: Logger = {
+  logf(): void {
+    /* discard */
+  },
+};
 
 export class MatrixClient {
   private readonly scheme: string;
