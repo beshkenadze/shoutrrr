@@ -1,9 +1,14 @@
 // Port of pkg/services/slack/slack_config.go
 
-import type { ConfigObject, FieldSchema } from './core/format.js';
-import { PropKeyResolver } from './core/propKeyResolver.js';
-import { EnumlessConfig } from './core/standard.js';
-import type { EnumFormatter, ServiceConfig } from './core/types.js';
+import {
+  EnumlessConfig,
+  PropKeyResolver,
+} from '@shoutrrr/core';
+import type {
+  EnumFormatter,
+  FieldSchema,
+  ServiceConfig,
+} from '@shoutrrr/core';
 import { Token } from './token.js';
 
 /** Scheme is the identifying part of this service's configuration URL. */
@@ -14,6 +19,12 @@ export const Scheme = 'slack';
  * BotName key:"botname,username"; Icon key:"icon,icon_emoji,icon_url";
  * Token url:"user,pass"; Color key:"color"; Title key:"title";
  * Channel url:"host"; ThreadTS key:"thread_ts".
+ *
+ * The Token (a ConfigProp) and Channel url-parts are mapped explicitly in
+ * applyURL/buildURL below — Token needs ConfigProp (de)serialization and
+ * Channel needs the legacy "webhook" special-casing — so they are NOT declared
+ * as `urlParts` here, keeping config.ts the single source of truth for that
+ * mapping and leaving the shared resolver to handle query keys only.
  */
 export const configSchema: FieldSchema[] = [
   {
@@ -33,7 +44,6 @@ export const configSchema: FieldSchema[] = [
   {
     name: 'token',
     type: 'prop',
-    urlParts: ['user', 'pass'],
     desc: 'API Bot token',
   },
   {
@@ -53,7 +63,6 @@ export const configSchema: FieldSchema[] = [
   {
     name: 'channel',
     type: 'string',
-    urlParts: ['host'],
     desc: 'Channel to send messages to in Cxxxxxxxxxx format',
   },
   {
@@ -66,7 +75,7 @@ export const configSchema: FieldSchema[] = [
 ];
 
 /** Config for the slack service. */
-export class Config extends EnumlessConfig implements ServiceConfig, ConfigObject {
+export class Config extends EnumlessConfig implements ServiceConfig {
   [key: string]: unknown;
 
   botName = '';
@@ -83,21 +92,22 @@ export class Config extends EnumlessConfig implements ServiceConfig, ConfigObjec
 
   /** GetURL returns a URL representation of the current field values. */
   getURL(): URL {
-    const resolver = new PropKeyResolver(this, configSchema, this.enums());
+    const resolver = new PropKeyResolver(this, configSchema);
     return this.buildURL(resolver);
   }
 
   /** SetURL updates the config from a URL representation of its field values. */
   setURL(serviceURL: URL): void {
-    const resolver = new PropKeyResolver(this, configSchema, this.enums());
+    const resolver = new PropKeyResolver(this, configSchema);
     this.applyURL(resolver, serviceURL);
   }
 
   private buildURL(resolver: PropKeyResolver): URL {
-    // Collect the (non-default) query params using the shared resolver logic.
-    const params = new URL(`${Scheme}://placeholder`);
-    resolver.bindToURL(params);
-    const query = params.searchParams.toString();
+    // Build the (non-default) query string with the shared resolver. We use its
+    // Go-faithful query escaping directly (buildQuery) rather than round-tripping
+    // through a WHATWG URL, whose searchParams.toString() would re-encode chars
+    // like '*', '(', ')' and diverge from Go's url.QueryEscape output.
+    const query = resolver.buildQuery();
 
     // Assemble the canonical string the Go url.URL{User,Host,Scheme,RawQuery}
     // would produce: no trailing slash before the query (WHATWG URL would add
@@ -128,7 +138,12 @@ export class Config extends EnumlessConfig implements ServiceConfig, ConfigObjec
 
     this.token.setFromProp(token);
 
-    resolver.setFromURL(serviceURL);
+    // Apply query params strictly: an unknown key (e.g. a typo) must error.
+    // The shared resolver's setFromURL silently skips unknown keys, so we drive
+    // resolver.set directly, which throws on any unrecognized config key.
+    for (const [key, value] of serviceURL.searchParams.entries()) {
+      resolver.set(key, value);
+    }
   }
 }
 

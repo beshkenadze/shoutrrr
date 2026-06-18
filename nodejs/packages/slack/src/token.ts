@@ -1,6 +1,6 @@
 // Port of pkg/services/slack/slack_token.go
 
-import type { ConfigProp } from './core/types.js';
+import type { ConfigProp } from '@shoutrrr/core';
 import { ErrorInvalidToken, ErrorMismatchedTokenSeparators } from './errors.js';
 
 const hookTokenIdentifier = 'hook';

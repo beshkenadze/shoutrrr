@@ -1,4 +1,4 @@
-import type { Service } from './core/types.js';
+import type { Service } from '@shoutrrr/core';
 import { SlackService } from './slack.js';
 
 export { SlackService } from './slack.js';
@@ -14,7 +14,7 @@ export {
   type APIResponse,
 } from './payload.js';
 export { ErrorInvalidToken, ErrorMismatchedTokenSeparators } from './errors.js';
-export type { Params, Logger, Service } from './core/types.js';
+export type { Params, Logger, Service } from '@shoutrrr/core';
 
 export interface ServiceDescriptor {
   schemes: string[];

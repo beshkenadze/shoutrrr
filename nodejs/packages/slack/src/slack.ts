@@ -1,11 +1,18 @@
 // Port of pkg/services/slack/slack.go
 
 import type { Dispatcher } from 'undici';
-import { ContentType, JsonClient } from './core/jsonclient.js';
-import type { FetchLike } from './core/jsonclient.js';
-import { PropKeyResolver } from './core/propKeyResolver.js';
-import { Standard } from './core/standard.js';
-import type { Logger, Params, Service as IService } from './core/types.js';
+import {
+  ContentType,
+  JsonClient,
+  PropKeyResolver,
+  Standard,
+} from '@shoutrrr/core';
+import type {
+  FetchLike,
+  Logger,
+  Params,
+  Service as IService,
+} from '@shoutrrr/core';
 import { Config, configSchema } from './config.js';
 import type { APIResponse, MessagePayload } from './payload.js';
 import { createJSONPayload } from './payload.js';
@@ -33,14 +40,18 @@ export class SlackService implements IService {
   }
 
   setLogger(logger?: Logger): void {
-    this.logger.setLogger(logger);
+    if (logger) {
+      this.logger.setLogger(logger);
+    }
   }
 
   /** Initialize loads the ServiceConfig from configURL and sets the logger. */
   initialize(configURL: URL, logger?: Logger): void {
-    this.logger.setLogger(logger);
+    if (logger) {
+      this.logger.setLogger(logger);
+    }
     this.config = new Config();
-    this.pkr = new PropKeyResolver(this.config, configSchema, this.config.enums());
+    this.pkr = new PropKeyResolver(this.config, configSchema);
     this.config.setURL(configURL);
   }
 
