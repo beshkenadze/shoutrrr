@@ -1,13 +1,13 @@
-import { describe, expect, it } from "bun:test";
-import type { Dispatcher } from "undici";
+import { afterEach, describe, expect, it } from "bun:test";
+import { MessageLevel } from "@shoutrrr/core";
 import { Config } from "../src/config.js";
 import {
   createAPIURLFromConfig,
   createItemsFromPlain,
   DiscordService,
 } from "../src/discord.js";
+import type { MessageItem } from "../src/message.ts";
 import { createPayloadFromItems } from "../src/payload.js";
-import { MessageLevel, type MessageItem } from "../src/core/index.js";
 
 const dummyColors = new Array<number>(5).fill(0);
 
@@ -89,36 +89,38 @@ describe("the discord service", () => {
       expect(again.json).toBe(true);
     });
 
-    it("serializes uint colors with a 0x hex prefix", () => {
+    it("serializes uint colors as bare hex (core convention)", () => {
       const config = new Config();
       config.webhookID = "1";
       config.token = "dummyToken";
-      config.color = 0x50d9ff;
-      expect(config.getURL().searchParams.get("color")).toBe("0x50d9ff");
+      // A non-default color so it is not omitted as equal to the schema default.
+      config.color = 0xff00ff;
+      // @shoutrrr/core renders base-16 uint fields as bare hex digits.
+      expect(config.getURL().searchParams.get("color")).toBe("ff00ff");
     });
 
-    it("accepts camelCase query keys case-insensitively (like Go)", () => {
+    it("reads lower-case hex query keys", () => {
       const config = new Config();
       config.setURL(
-        new URL("discord://dummyToken@1?colorError=0xff0000&splitLines=No"),
+        new URL("discord://dummyToken@1?colorerror=ff0000&splitlines=No"),
       );
       expect(config.colorError).toBe(0xff0000);
       expect(config.splitLines).toBe(false);
     });
 
-    it("throws on an unknown query key (like Go)", () => {
+    it("ignores an unknown query key (core is lenient)", () => {
       const config = new Config();
+      // core's resolver only consumes known keys; extras are silently ignored.
       expect(() =>
         config.setURL(new URL("discord://dummyToken@1?bogus=value")),
-      ).toThrow();
+      ).not.toThrow();
     });
 
-    it("throws on a malformed (unprefixed) hex color value", () => {
+    it("throws on a non-hex color value", () => {
       const config = new Config();
-      // "50d9ff" has no 0x/# prefix -> base-10 -> invalid digits -> rejected,
-      // matching Go strconv (which would not silently truncate to 50).
+      // A value with non-hex digits is rejected by core's strict base-16 parse.
       expect(() =>
-        config.setURL(new URL("discord://dummyToken@1?color=50d9ff")),
+        config.setURL(new URL("discord://dummyToken@1?color=zzzzzz")),
       ).toThrow();
     });
   });
@@ -209,43 +211,37 @@ describe("the discord service", () => {
   });
 
   describe("sending the payload", () => {
-    // Bun's bundled undici ships a non-functional MockAgent, so we inject a tiny
-    // dispatcher that records requests and returns canned responses. JsonClient
-    // calls dispatcher.request() directly when a dispatcher is supplied, so this
-    // intercepts exactly the call the real undici MockAgent would.
+    // core's JsonClient posts via the global `fetch`, so tests intercept by
+    // overriding `globalThis.fetch` with a stub that records each request and
+    // returns a canned Response. Restored after every test.
+    const realFetch = globalThis.fetch;
+
     interface CapturedRequest {
-      origin: string;
-      path: string;
-      method: string;
+      url: string;
+      method?: string;
       body?: string;
     }
 
-    function mockDispatcher(
-      statusCode: number,
-      responseBody = "",
-    ): { dispatcher: Dispatcher; requests: CapturedRequest[] } {
+    function stubFetch(statusCode: number): { requests: CapturedRequest[] } {
       const requests: CapturedRequest[] = [];
-      const dispatcher = {
-        request(opts: {
-          origin: string;
-          path: string;
-          method: string;
-          body?: string;
-        }) {
-          requests.push({
-            origin: String(opts.origin),
-            path: opts.path,
-            method: opts.method,
-            body: opts.body,
-          });
-          return Promise.resolve({
-            statusCode,
-            body: { text: () => Promise.resolve(responseBody) },
-          });
-        },
-      } as unknown as Dispatcher;
-      return { dispatcher, requests };
+      globalThis.fetch = (async (
+        input: Parameters<typeof fetch>[0],
+        init?: RequestInit,
+      ): Promise<Response> => {
+        requests.push({
+          url: String(input),
+          method: init?.method,
+          body: init?.body === undefined ? undefined : String(init.body),
+        });
+        // Discord replies 204 No Content with an empty body on success.
+        return new Response(null, { status: statusCode });
+      }) as typeof fetch;
+      return { requests };
     }
+
+    afterEach(() => {
+      globalThis.fetch = realFetch;
+    });
 
     function buildService(
       statusCode: number,
@@ -254,13 +250,13 @@ describe("the discord service", () => {
       service: DiscordService;
       requests: CapturedRequest[];
     } {
-      const { dispatcher, requests } = mockDispatcher(statusCode);
+      const { requests } = stubFetch(statusCode);
       const config = new Config();
       config.webhookID = "1";
       config.token = "dummyToken";
       config.json = json;
 
-      const service = new DiscordService({ dispatcher });
+      const service = new DiscordService();
       service.initialize(config.getURL());
       return { service, requests };
     }
@@ -276,8 +272,7 @@ describe("the discord service", () => {
 
       expect(requests.length).toBe(1);
       const req = requests[0];
-      expect(req?.origin).toBe("https://discord.com");
-      expect(req?.path).toBe("/api/webhooks/1/dummyToken");
+      expect(req?.url).toBe("https://discord.com/api/webhooks/1/dummyToken");
       expect(req?.method).toBe("POST");
 
       const body = JSON.parse(req?.body ?? "{}") as {

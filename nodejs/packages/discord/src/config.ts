@@ -2,10 +2,10 @@ import {
   EnumlessConfig,
   type FieldSchema,
   MessageLevel,
-  MessageLevelCount,
   PropKeyResolver,
   type ServiceConfig,
-} from "./core/index.js";
+} from "@shoutrrr/core";
+import { MessageLevelCount } from "./message.ts";
 
 /** Scheme is the identifying part of this service's configuration URL. */
 export const SCHEME = "discord";
@@ -34,46 +34,46 @@ export const DISCORD_SCHEMA: FieldSchema[] = [
     name: "color",
     type: "uint",
     key: ["color"],
-    default: "0x50D9ff",
+    default: "50d9ff",
     base: 16,
     desc: "The color of the left border for plain messages",
   },
   {
     name: "colorError",
     type: "uint",
-    key: ["colorError"],
-    default: "0xd60510",
+    key: ["colorerror"],
+    default: "d60510",
     base: 16,
     desc: "The color of the left border for error messages",
   },
   {
     name: "colorWarn",
     type: "uint",
-    key: ["colorWarn"],
-    default: "0xffc441",
+    key: ["colorwarn"],
+    default: "ffc441",
     base: 16,
     desc: "The color of the left border for warning messages",
   },
   {
     name: "colorInfo",
     type: "uint",
-    key: ["colorInfo"],
-    default: "0x2488ff",
+    key: ["colorinfo"],
+    default: "2488ff",
     base: 16,
     desc: "The color of the left border for info messages",
   },
   {
     name: "colorDebug",
     type: "uint",
-    key: ["colorDebug"],
-    default: "0x7b00ab",
+    key: ["colordebug"],
+    default: "7b00ab",
     base: 16,
     desc: "The color of the left border for debug messages",
   },
   {
     name: "splitLines",
     type: "bool",
-    key: ["splitLines"],
+    key: ["splitlines"],
     default: "Yes",
     desc: "Whether to send each line as a separate embedded item",
   },
@@ -131,11 +131,8 @@ export class Config extends EnumlessConfig implements ServiceConfig {
    * needed.
    */
   newResolver(): PropKeyResolver {
-    return new PropKeyResolver(
-      this as unknown as Record<string, unknown>,
-      DISCORD_SCHEMA,
-      this.enums(),
-    );
+    // core's PropKeyResolver reads enums from config.enums() itself.
+    return new PropKeyResolver(this, DISCORD_SCHEMA);
   }
 
   /** getURL returns a URL representation of the current field values. */
