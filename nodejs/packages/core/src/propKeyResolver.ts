@@ -58,8 +58,11 @@ export class PropKeyResolver {
 
   /** Whether `key` is a field's primary key (not an alias). */
   keyIsPrimary(key: string): boolean {
-    const field = this.keyFields.get(key);
-    return field?.key?.[0] === key;
+    const lowerKey = key.toLowerCase();
+    const field = this.keyFields.get(lowerKey);
+    // Compare lower-cased: Go's resolver lower-cases every key tag, so a
+    // mixed-case schema key (e.g. `disableTLS`) is still its own primary key.
+    return field?.key?.[0]?.toLowerCase() === lowerKey;
   }
 
   /** Whether `value` equals the default for `key`. */

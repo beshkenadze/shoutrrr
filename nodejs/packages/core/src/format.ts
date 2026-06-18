@@ -134,19 +134,35 @@ function parseIntStrict(
     throw new Error(`invalid number: ${JSON.stringify(raw)}`);
   }
   const negative = signed && trimmed.startsWith('-');
-  const body = negative ? trimmed.slice(1) : trimmed;
+  let body = negative ? trimmed.slice(1) : trimmed;
+  // Mirror Go's util.StripNumberPrefix: a 0x/0b/0o prefix selects the radix
+  // (e.g. discord's `0x50d9ff` colors), overriding the schema base.
+  let effectiveBase = base;
+  if (body.length > 2 && body[0] === '0') {
+    const prefix = body[1]?.toLowerCase();
+    if (prefix === 'x') {
+      effectiveBase = 16;
+      body = body.slice(2);
+    } else if (prefix === 'b') {
+      effectiveBase = 2;
+      body = body.slice(2);
+    } else if (prefix === 'o') {
+      effectiveBase = 8;
+      body = body.slice(2);
+    }
+  }
   const re =
-    base === 16
+    effectiveBase === 16
       ? /^[0-9a-fA-F]+$/
-      : base === 8
+      : effectiveBase === 8
         ? /^[0-7]+$/
-        : base === 2
+        : effectiveBase === 2
           ? /^[01]+$/
           : /^[0-9]+$/;
   if (!re.test(body)) {
-    throw new Error(`invalid number ${JSON.stringify(raw)} for base ${base}`);
+    throw new Error(`invalid number ${JSON.stringify(raw)} for base ${effectiveBase}`);
   }
-  const n = parseInt(body, base);
+  const n = parseInt(body, effectiveBase);
   if (Number.isNaN(n)) {
     throw new Error(`invalid number: ${JSON.stringify(raw)}`);
   }
