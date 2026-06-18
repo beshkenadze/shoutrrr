@@ -1,9 +1,8 @@
 import { STATUS_CODES } from 'node:http';
+import { JsonClient, Standard } from '@shoutrrr/core';
+import type { Logger, Params, Service } from '@shoutrrr/core';
 import type { Dispatcher } from 'undici';
-import { Config, ErrorMessage } from './config.js';
-import { JsonClient } from './core/jsonclient.js';
-import { Standard } from './core/standard.js';
-import type { Logger, Params, Service } from './core/types.js';
+import { Config, ErrorMessage } from './config.ts';
 
 const CONTENT_MAX_SIZE = 10000; // bytes
 const TOPIC_MAX_LENGTH = 60; // characters
@@ -58,7 +57,9 @@ export class ZulipService extends Standard implements Service {
 
   /** Loads config from the service URL and sets the logger. */
   initialize(url: URL, logger?: Logger): void {
-    this.setLogger(logger);
+    if (logger) {
+      this.setLogger(logger);
+    }
     const config = new Config();
     config.setURL(url);
     this.config = config;
@@ -99,14 +100,20 @@ export class ZulipService extends Standard implements Service {
     const origin = this.apiOrigin ?? `https://${config.host}`;
     const apiURL = `${origin}/api/v1/messages`;
     const payload = createPayload(config, message);
+    const token = Buffer.from(`${config.botMail}:${config.botKey}`).toString('base64');
     const client = new JsonClient({ dispatcher: this.dispatcher });
 
+    // Use the raw request escape hatch (not postForm) so transport reaches us as
+    // a thrown error and any non-200 surfaces as a Response we can check
+    // ourselves — Zulip's API treats only HTTP 200 as success.
     let status: number;
     try {
-      ({ status } = await client.postForm(apiURL, payload, {
-        user: config.botMail,
-        pass: config.botKey,
-      }));
+      const res = await client.request('POST', apiURL, {
+        body: payload.toString(),
+        contentType: 'application/x-www-form-urlencoded',
+        headers: { Authorization: `Basic ${token}` },
+      });
+      status = res.status;
     } catch (err) {
       const reason = err instanceof Error ? err.message : String(err);
       throw new Error(`failed to send zulip message: ${reason}`);

@@ -1,4 +1,4 @@
-import { EnumlessConfig } from './core/standard.js';
+import { EnumlessConfig } from '@shoutrrr/core';
 
 /** Identifying scheme for the Zulip service configuration URL. */
 export const Scheme = 'zulip';
