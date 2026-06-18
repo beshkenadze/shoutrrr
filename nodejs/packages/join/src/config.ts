@@ -5,7 +5,7 @@ import {
   type EnumFormatter,
   type FieldSchema,
   type ServiceConfig,
-} from './core/index.js';
+} from '@shoutrrr/core';
 
 /** Scheme is the identifying part of this service's configuration URL. */
 export const Scheme = 'join';

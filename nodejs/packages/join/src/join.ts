@@ -1,8 +1,14 @@
 // Port of Go pkg/services/join/join.go (Service).
 
-import { request, type Dispatcher } from 'undici';
+import { type Dispatcher } from 'undici';
 import { Config } from './config.js';
-import { Standard, type Logger, type Params } from './core/index.js';
+import {
+  JsonClient,
+  goQueryEscape,
+  Standard,
+  type Logger,
+  type Params,
+} from '@shoutrrr/core';
 
 /** Default Join push endpoint (mirrors the Go hookURL constant). */
 export const hookURL =
@@ -19,18 +25,20 @@ export interface JoinServiceOptions {
 /** Service provides the Join notification service. */
 export class JoinService extends Standard {
   private config: Config | undefined;
-  private readonly dispatcher?: Dispatcher;
+  private readonly client: JsonClient;
   private readonly baseURL: string;
 
   constructor(opts: JoinServiceOptions = {}) {
     super();
-    this.dispatcher = opts.dispatcher;
+    this.client = new JsonClient({ dispatcher: opts.dispatcher });
     this.baseURL = opts.baseURL ?? hookURL;
   }
 
   /** initialize loads the config from configURL and sets the logger. */
   initialize(configURL: URL, logger?: Logger): void {
-    this.setLogger(logger);
+    if (logger) {
+      this.setLogger(logger);
+    }
     const config = new Config();
     config.setURL(configURL);
     this.config = config;
@@ -57,33 +65,37 @@ export class JoinService extends Standard {
     title: string,
     icon: string,
   ): Promise<void> {
-    const data = new URLSearchParams();
-    data.set('deviceIds', devices);
-    data.set('apikey', apiKey);
-    data.set('text', message);
+    // Build the query exactly like Go's url.Values.Encode() (space => "+",
+    // comma => "%2C"); goQueryEscape matches that byte output.
+    const pairs: Array<[string, string]> = [
+      ['deviceIds', devices],
+      ['apikey', apiKey],
+      ['text', message],
+    ];
 
     if (title.length > 0) {
-      data.set('title', title);
+      pairs.push(['title', title]);
     }
 
     if (icon.length > 0) {
-      data.set('icon', icon);
+      pairs.push(['icon', icon]);
     }
 
-    const apiURL = `${this.baseURL}?${data.toString()}`;
+    const query = pairs
+      .map(([key, value]) => `${goQueryEscape(key)}=${goQueryEscape(value)}`)
+      .join('&');
+    const apiURL = `${this.baseURL}?${query}`;
 
-    const res = await request(apiURL, {
-      method: 'POST',
-      headers: { 'content-type': contentType },
-      ...(this.dispatcher ? { dispatcher: this.dispatcher } : {}),
-    });
+    // Mirrors Go's http.Post(apiURL, "text/plain", nil): a text/plain POST with
+    // no body. request() returns the raw Response without throwing on non-2xx.
+    const res = await this.client.request('POST', apiURL, { contentType });
 
     // Drain the body to release the connection.
-    await res.body.text();
+    await res.text();
 
-    if (res.statusCode !== 200) {
+    if (res.status !== 200) {
       throw new Error(
-        `failed to send notification to join devices "${devices}", response status "${res.statusCode}"`,
+        `failed to send notification to join devices "${devices}", response status "${res.status}"`,
       );
     }
   }
