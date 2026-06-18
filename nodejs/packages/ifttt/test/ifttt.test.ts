@@ -61,6 +61,13 @@ describe("the ifttt package", () => {
       expect(() => service.initialize(new URL("ifttt://dummyID"))).toThrow();
     });
 
+    it("should error if an explicitly empty events value is given", () => {
+      const service = new IftttService();
+      expect(() =>
+        service.initialize(new URL("ifttt://dummyID/?events=")),
+      ).toThrow();
+    });
+
     it("should error when an invalid query key is given", () => {
       const service = new IftttService();
       expect(() =>

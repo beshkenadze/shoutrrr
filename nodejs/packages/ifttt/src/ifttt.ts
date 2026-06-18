@@ -1,9 +1,13 @@
+import {
+  JsonClient,
+  type Logger,
+  type Params,
+  type PropKeyResolver,
+  type Service,
+  Standard,
+} from "@shoutrrr/core";
 import type { Dispatcher } from "undici";
 import { Config } from "./config.js";
-import { JsonClient } from "./core/jsonclient.js";
-import type { PropKeyResolver } from "./core/propKeyResolver.js";
-import { Standard } from "./core/standard.js";
-import type { Logger, Params, Service } from "./core/types.js";
 import { createJSONToSend } from "./payload.js";
 
 /** Default IFTTT Maker webhook base. Overridable for testing. */
@@ -36,7 +40,9 @@ export class IftttService implements Service {
 
   /** initialize loads config from configURL and sets the logger. */
   initialize(configURL: URL, logger?: Logger): void {
-    this.standard.setLogger(logger);
+    if (logger) {
+      this.standard.setLogger(logger);
+    }
     // useMessageAsValue defaults to 2 via the Config field initializer; setURL
     // additionally coerces an explicit 0 back to 2 (matching Go's setURL).
     const config = new Config();
