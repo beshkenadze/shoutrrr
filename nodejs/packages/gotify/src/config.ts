@@ -2,11 +2,10 @@
 import {
   EnumlessConfig,
   PropKeyResolver,
-  type ConfigRecord,
   type EnumFormatter,
   type FieldSchema,
   type ServiceConfig,
-} from './core/index.js';
+} from '@shoutrrr/core';
 
 /** Scheme is the identifying part of this service's configuration URL. */
 export const SCHEME = 'gotify';
@@ -14,7 +13,7 @@ export const SCHEME = 'gotify';
 const enumless = new EnumlessConfig();
 
 /** Config holds the parsed Gotify service configuration. */
-export class Config implements ServiceConfig, ConfigRecord {
+export class Config implements ServiceConfig {
   [key: string]: unknown;
 
   Token = '';
@@ -52,10 +51,14 @@ export class Config implements ServiceConfig, ConfigRecord {
 
   private buildConfigURL(resolver: PropKeyResolver): URL {
     // Mirror Go url.URL{ Host, Scheme, Path: Path+Token, RawQuery }.String().
+    // Host/Path/Token are written manually (gotify's path layout is bespoke);
+    // the resolver only produces the query string, exactly like Go's
+    // RawQuery: format.BuildQuery(resolver). buildQuery() is query-only — using
+    // bindToURL() here would also rewrite the host/path URL parts.
     const path = this.Path + this.Token;
     const normalizedPath = path.startsWith('/') ? path : `/${path}`;
     const url = new URL(`${SCHEME}://${this.Host}${normalizedPath}`);
-    resolver.bindToURL(url);
+    url.search = resolver.buildQuery();
     return url;
   }
 
@@ -78,6 +81,11 @@ export class Config implements ServiceConfig, ConfigRecord {
     this.Host = url.host;
     this.Token = path.slice(tokenIndex);
 
-    resolver.setFromURL(url);
+    // Apply only the query params (Go's `for key, vals := range url.Query()`).
+    // setFromURL() would also re-derive Host/Token/Path from URL parts, which
+    // would clobber the bespoke split performed above.
+    for (const [key, value] of url.searchParams.entries()) {
+      resolver.set(key, value);
+    }
   }
 }
