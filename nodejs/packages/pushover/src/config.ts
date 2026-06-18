@@ -1,5 +1,5 @@
-import type { EnumFormatter, ServiceConfig } from './core/index.js';
-import { type FieldSchema, PropKeyResolver } from './core/index.js';
+import type { EnumFormatter, ServiceConfig } from '@shoutrrr/core';
+import { type FieldSchema, PropKeyResolver } from '@shoutrrr/core';
 
 /** Scheme is the identifying part of this service's configuration URL. */
 export const Scheme = 'pushover';
@@ -33,7 +33,7 @@ export class Config implements ServiceConfig {
 
   /** newResolver binds a PropKeyResolver to this config's query props. */
   newResolver(): PropKeyResolver {
-    return new PropKeyResolver(this as unknown as Record<string, unknown>, fieldSchema, this.enums());
+    return new PropKeyResolver(this, fieldSchema);
   }
 
   /** getURL returns a URL representation of the current field values. */
