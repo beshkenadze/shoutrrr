@@ -1,11 +1,5 @@
 import { afterEach, describe, expect, it } from 'bun:test';
-import {
-  createServer,
-  type IncomingMessage,
-  type Server,
-  type ServerResponse,
-} from 'node:http';
-import { JsonClient, ApiError } from '../src/core/index.js';
+import { JsonClient, ApiError } from '@shoutrrr/core';
 import { MattermostConfig, createConfigFromURL } from '../src/config.js';
 import {
   createJSONPayload,
@@ -13,12 +7,7 @@ import {
   setIcon,
   type MattermostJSON,
 } from '../src/payload.js';
-import {
-  MattermostService,
-  buildURL,
-  descriptor,
-  type Transport,
-} from '../src/index.js';
+import { MattermostService, buildURL, descriptor } from '../src/index.js';
 
 interface CapturedRequest {
   method?: string;
@@ -28,61 +17,46 @@ interface CapturedRequest {
 }
 
 /**
- * Starts a loopback HTTP server that records the request and replies 200 for
- * `/hooks/*` paths and 500 otherwise. Returns the captured request and port.
+ * Installs a `globalThis.fetch` override that records the request and replies
+ * 200 for `/hooks/*` paths and 500 otherwise (mirroring the Go suite's
+ * jarcoal/httpmock). The service's default transport routes through the core
+ * `JsonClient`, whose default fetch is `globalThis.fetch` — so overriding it
+ * intercepts the real call without a network round-trip.
  *
- * Note: the Go suite mocks HTTP with jarcoal/httpmock and the Node SDK design
- * uses an injectable undici dispatcher (MockAgent). Bun's built-in `undici`
- * shim ignores custom dispatchers, so for `bun test` we exercise the real
- * network transport against a loopback server instead — same assertions
- * (POST + webhook path with port + JSON body; 200 resolves, error rejects).
+ * Pass `forceStatus` to reply that status for every path (used to drive the
+ * non-2xx error path even on a `/hooks/` URL).
+ *
+ * Returns the captured request plus a `restore()` to reinstate global fetch.
  */
-async function startServer(): Promise<{
-  server: Server;
-  port: number;
+function mockFetch(opts: { forceStatus?: number } = {}): {
   captured: CapturedRequest;
-}> {
+  restore: () => void;
+} {
   const captured: CapturedRequest = {};
-  const server = createServer((req: IncomingMessage, res: ServerResponse) => {
-    let body = '';
-    req.on('data', (chunk) => {
-      body += chunk;
-    });
-    req.on('end', () => {
-      captured.method = req.method;
-      captured.url = req.url;
-      captured.body = body;
-      captured.contentType = req.headers['content-type'];
-      if (req.url?.startsWith('/hooks/')) {
-        res.writeHead(200);
-        res.end('');
-      } else {
-        res.writeHead(500);
-        res.end('boom');
-      }
-    });
-  });
-  await new Promise<void>((resolve) => {
-    server.listen(0, '127.0.0.1', () => resolve());
-  });
-  const address = server.address();
-  const port = typeof address === 'object' && address ? address.port : 0;
-  return { server, port, captured };
-}
-
-/**
- * Builds a transport that rewrites the production `https://<host>/hooks/...`
- * webhook to the loopback server, preserving the path (so the webhook path
- * including any port survives end-to-end).
- */
-function loopbackTransport(port: number): Transport {
-  const client = new JsonClient();
-  return (apiURL, body) => {
-    const target = new URL(apiURL);
-    return client.post(
-      `http://127.0.0.1:${port}${target.pathname}`,
-      body,
-    );
+  const original = globalThis.fetch;
+  globalThis.fetch = (async (
+    input: string | URL | Request,
+    init?: RequestInit,
+  ): Promise<Response> => {
+    const url = typeof input === 'string' ? input : input.toString();
+    const headers = new Headers(init?.headers);
+    captured.method = init?.method;
+    captured.url = url;
+    captured.body = typeof init?.body === 'string' ? init.body : undefined;
+    captured.contentType = headers.get('content-type') ?? undefined;
+    if (opts.forceStatus !== undefined) {
+      return new Response('boom', { status: opts.forceStatus });
+    }
+    if (new URL(url).pathname.startsWith('/hooks/')) {
+      return new Response('', { status: 200 });
+    }
+    return new Response('boom', { status: 500 });
+  }) as unknown as typeof globalThis.fetch;
+  return {
+    captured,
+    restore: () => {
+      globalThis.fetch = original;
+    },
   };
 }
 
@@ -309,34 +283,36 @@ describe('the service descriptor', () => {
 });
 
 describe('the JsonClient transport', () => {
-  let server: Server | undefined;
+  let restore: (() => void) | undefined;
 
   afterEach(() => {
-    server?.close();
-    server = undefined;
+    restore?.();
+    restore = undefined;
   });
 
-  it('resolves on 2xx and posts the JSON body with content-type', async () => {
-    const started = await startServer();
-    server = started.server;
+  it('posts the raw JSON body with content-type and resolves on 2xx', async () => {
+    const mock = mockFetch();
+    restore = mock.restore;
     const client = new JsonClient();
-    await client.post(
-      `http://127.0.0.1:${started.port}/hooks/token`,
-      '{"text":"Message"}',
-    );
-    expect(started.captured.method).toBe('POST');
-    expect(started.captured.url).toBe('/hooks/token');
-    expect(started.captured.body).toBe('{"text":"Message"}');
-    expect(started.captured.contentType).toBe('application/json');
+    // The service posts a pre-serialized JSON string via `request` (no re-encode).
+    const res = await client.request('POST', 'https://mattermost.host/hooks/token', {
+      body: '{"text":"Message"}',
+      contentType: 'application/json',
+    });
+    expect(res.status).toBe(200);
+    expect(mock.captured.method).toBe('POST');
+    expect(mock.captured.url).toBe('https://mattermost.host/hooks/token');
+    expect(mock.captured.body).toBe('{"text":"Message"}');
+    expect(mock.captured.contentType).toBe('application/json');
   });
 
   it('rejects with ApiError on non-2xx', async () => {
-    const started = await startServer();
-    server = started.server;
+    const mock = mockFetch();
+    restore = mock.restore;
     const client = new JsonClient();
     let caught: unknown;
     try {
-      await client.post(`http://127.0.0.1:${started.port}/wrong`, 'x');
+      await client.post('https://mattermost.host/wrong', { text: 'x' });
     } catch (err) {
       caught = err;
     }
@@ -345,64 +321,53 @@ describe('the JsonClient transport', () => {
   });
 });
 
-describe('sending the payload (end-to-end via loopback)', () => {
-  let server: Server | undefined;
+describe('sending the payload (end-to-end via fetch override)', () => {
+  let restore: (() => void) | undefined;
 
   afterEach(() => {
-    server?.close();
-    server = undefined;
+    restore?.();
+    restore = undefined;
   });
 
-  it('does not error when the server accepts the payload', async () => {
-    const started = await startServer();
-    server = started.server;
-    const service = new MattermostService({
-      transport: loopbackTransport(started.port),
-    });
+  it('posts the JSON body to the webhook URL and resolves on 2xx', async () => {
+    const mock = mockFetch();
+    restore = mock.restore;
+    const service = new MattermostService();
     service.initialize(new URL('mattermost://mattermost.host/token'));
     await service.send('Message');
-    expect(started.captured.method).toBe('POST');
-    expect(started.captured.url).toBe('/hooks/token');
-    expect(started.captured.body).toBe('{"text":"Message"}');
+    expect(mock.captured.method).toBe('POST');
+    expect(mock.captured.url).toBe('https://mattermost.host/hooks/token');
+    expect(mock.captured.body).toBe('{"text":"Message"}');
+    expect(mock.captured.contentType).toBe('application/json');
   });
 
-  it('posts to the webhook path derived from a URL with a port', async () => {
-    const started = await startServer();
-    server = started.server;
-    // Webhook URL preserves the port: https://mattermost.host:8065/hooks/token
-    const service = new MattermostService({
-      transport: (apiURL, body) => {
-        expect(apiURL).toBe('https://mattermost.host:8065/hooks/token');
-        return loopbackTransport(started.port)(apiURL, body);
-      },
-    });
+  it('posts to the webhook URL derived from a URL with a port', async () => {
+    const mock = mockFetch();
+    restore = mock.restore;
+    const service = new MattermostService();
     service.initialize(new URL('mattermost://mattermost.host:8065/token'));
     await service.send('Message');
-    expect(started.captured.url).toBe('/hooks/token');
+    // Webhook URL preserves the port end-to-end.
+    expect(mock.captured.url).toBe('https://mattermost.host:8065/hooks/token');
   });
 
   it('posts the JSON body with username and channel', async () => {
-    const started = await startServer();
-    server = started.server;
-    const service = new MattermostService({
-      transport: loopbackTransport(started.port),
-    });
+    const mock = mockFetch();
+    restore = mock.restore;
+    const service = new MattermostService();
     service.initialize(new URL('mattermost://bot@mattermost.host/token/general'));
     await service.send('hello');
-    expect(started.captured.body).toBe(
+    expect(mock.captured.body).toBe(
       '{"text":"hello","username":"bot","channel":"general"}',
     );
   });
 
-  it('rejects when the server returns an error status', async () => {
-    const started = await startServer();
-    server = started.server;
-    const service = new MattermostService({
-      // Route to a non-/hooks path so the loopback server replies 500.
-      transport: (_apiURL, body) =>
-        new JsonClient().post(`http://127.0.0.1:${started.port}/error`, body),
-    });
+  it('rejects with ApiError when the server returns an error status', async () => {
+    // Force 500 so the default transport's non-2xx path is exercised.
+    const mock = mockFetch({ forceStatus: 500 });
+    restore = mock.restore;
+    const service = new MattermostService();
     service.initialize(new URL('mattermost://mattermost.host/token'));
-    await expect(service.send('Message')).rejects.toThrow();
+    await expect(service.send('Message')).rejects.toBeInstanceOf(ApiError);
   });
 });
