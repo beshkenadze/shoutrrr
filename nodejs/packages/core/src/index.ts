@@ -22,11 +22,13 @@ export {
   getConfigFieldString,
   parseBool,
   printBool,
+  goQueryEscape,
 } from './format.ts';
 
 export { PropKeyResolver, KEY_PREFIX } from './propKeyResolver.ts';
 
-export { JsonClient, ApiError } from './jsonclient.ts';
+export type { FetchLike, JsonClientOptions } from './jsonclient.ts';
+export { JsonClient, ApiError, ContentType, parseBody } from './jsonclient.ts';
 
 export { Standard, EnumlessConfig } from './standard.ts';
 
