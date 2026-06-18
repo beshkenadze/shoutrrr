@@ -1,11 +1,36 @@
 // Ported from Go pkg/services/ntfy/ntfy_config.go.
-import { encodeUserinfoComponent, type FieldSchema } from './core/format.js';
-import { PropKeyResolver } from './core/propKeyResolver.js';
-import type { EnumFormatter, ServiceConfig } from './core/types.js';
+import {
+  type EnumFormatter,
+  type FieldSchema,
+  PropKeyResolver,
+  type ServiceConfig,
+} from '@shoutrrr/core';
 import { Priority, priorityEnum } from './priority.js';
 
 /** Scheme is the identifying part of this service's configuration URL. */
 export const Scheme = 'ntfy';
+
+/**
+ * encodeUserinfoComponent mirrors Go net/url userinfo escaping (the mode used
+ * by url.UserPassword). The literal set, verified against Go's url.UserPassword
+ * output, is the unreserved chars plus the sub-delims $ & + , ; = (space and
+ * everything else are percent-encoded; note ! and ' are escaped). ntfy-specific:
+ * it is the only consumer, so it lives here rather than in @shoutrrr/core.
+ */
+function encodeUserinfoComponent(s: string): string {
+  const keep = /[A-Za-z0-9\-._~$&+,;=]/;
+  let out = '';
+  for (const ch of s) {
+    if (keep.test(ch)) {
+      out += ch;
+    } else {
+      for (const byte of new TextEncoder().encode(ch)) {
+        out += `%${byte.toString(16).toUpperCase().padStart(2, '0')}`;
+      }
+    }
+  }
+  return out;
+}
 
 /**
  * fieldSchema describes the query-serializable config fields. URL-part fields
@@ -58,11 +83,7 @@ export class Config implements ServiceConfig {
   }
 
   private resolver(): PropKeyResolver {
-    return new PropKeyResolver(
-      this as unknown as Record<string, unknown>,
-      fieldSchema,
-      this.enums(),
-    );
+    return new PropKeyResolver(this, fieldSchema);
   }
 
   /**
@@ -80,14 +101,21 @@ export class Config implements ServiceConfig {
     return new URL(`${Scheme}://${user}:${pass}@${this.host}${path}?${query}`);
   }
 
-  /** setURL updates the config from a URL representation of its field values. */
+  /**
+   * setURL updates the config from a URL representation of its field values.
+   * Like the Go reference, every query key is fed through resolver.set, so an
+   * unknown key raises (strict parse) rather than being silently ignored.
+   */
   setURL(url: URL): void {
     this.password = decodeURIComponent(url.password);
     this.username = decodeURIComponent(url.username);
     this.host = url.host;
     this.topic = url.pathname.replace(/^\//, '');
 
-    this.resolver().setFromURL(url);
+    const resolver = this.resolver();
+    for (const [key, value] of url.searchParams.entries()) {
+      resolver.set(key, value);
+    }
   }
 
   /**

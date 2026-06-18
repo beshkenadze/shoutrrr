@@ -1,13 +1,13 @@
-import { afterEach, describe, expect, mock, test } from 'bun:test';
+import { afterEach, describe, expect, test } from 'bun:test';
 import { Config, Scheme } from '../src/config.js';
 import { NtfyService } from '../src/ntfy.js';
 import { Priority, priorityEnum } from '../src/priority.js';
 import { formatApiError } from '../src/payload.js';
 
-// undici's MockAgent cannot intercept requests under Bun (Bun substitutes its
-// own undici whose request() ignores custom dispatchers). Mocking the undici
-// `request` function at the module boundary is the idiomatic Bun equivalent and
-// lets us assert the endpoint, body, headers and status handling.
+// @shoutrrr/core's JsonClient is built on the standard fetch API. undici's
+// MockAgent does not work under Bun, so the idiomatic Bun equivalent is to
+// override globalThis.fetch and assert the endpoint, body, headers and status
+// handling from the captured RequestInit.
 interface CapturedRequest {
   url: string;
   method?: string;
@@ -15,35 +15,60 @@ interface CapturedRequest {
   headers: Record<string, string>;
 }
 
-function installUndiciMock(
+const realFetch = globalThis.fetch;
+afterEach(() => {
+  globalThis.fetch = realFetch;
+});
+
+function headersToRecord(
+  headers: RequestInit['headers'],
+): Record<string, string> {
+  const record: Record<string, string> = {};
+  if (!headers) {
+    return record;
+  }
+  // @shoutrrr/core's JsonClient always passes a plain Record headers object,
+  // but normalize the Headers / array shapes too for robustness.
+  if (headers instanceof Headers) {
+    headers.forEach((value, key) => {
+      record[key] = value;
+    });
+  } else if (Array.isArray(headers)) {
+    for (const [key, value] of headers) {
+      if (key !== undefined) {
+        record[key] = value ?? '';
+      }
+    }
+  } else {
+    Object.assign(record, headers);
+  }
+  return record;
+}
+
+function installFetchMock(
   responder: (req: CapturedRequest) => { statusCode: number; body: unknown },
 ): { calls: CapturedRequest[] } {
   const calls: CapturedRequest[] = [];
-  mock.module('undici', () => ({
-    request: async (url: string, opts: { method?: string; body?: string; headers?: Record<string, string> }) => {
-      const captured: CapturedRequest = {
-        url,
-        method: opts.method,
-        body: opts.body,
-        headers: opts.headers ?? {},
-      };
-      calls.push(captured);
-      const { statusCode, body } = responder(captured);
-      return {
-        statusCode,
-        body: { text: async () => (body === undefined ? '' : JSON.stringify(body)) },
-      };
-    },
-  }));
+  globalThis.fetch = (async (input: string, init?: RequestInit) => {
+    const captured: CapturedRequest = {
+      url: String(input),
+      method: init?.method,
+      body: init?.body as string | undefined,
+      headers: headersToRecord(init?.headers),
+    };
+    calls.push(captured);
+    const { statusCode, body } = responder(captured);
+    return new Response(body === undefined ? '' : JSON.stringify(body), {
+      status: statusCode,
+    });
+  }) as unknown as typeof fetch;
   return { calls };
 }
 
-function installUndiciNetworkError(): void {
-  mock.module('undici', () => ({
-    request: async () => {
-      throw new Error('Unable to connect to nonresolvablehostname');
-    },
-  }));
+function installFetchNetworkError(): void {
+  globalThis.fetch = (async (): Promise<Response> => {
+    throw new Error('Unable to connect to nonresolvablehostname');
+  }) as unknown as typeof fetch;
 }
 
 describe('the ntfy config', () => {
@@ -168,12 +193,8 @@ describe('formatApiError', () => {
 });
 
 describe('sending the push payload', () => {
-  afterEach(() => {
-    mock.restore();
-  });
-
   test('resolves and POSTs the message body to the topic endpoint', async () => {
-    const { calls } = installUndiciMock(() => ({
+    const { calls } = installFetchMock(() => ({
       statusCode: 200,
       body: { code: 200, error: 'OK' },
     }));
@@ -191,7 +212,7 @@ describe('sending the push payload', () => {
   });
 
   test('rejects when the server returns an error', async () => {
-    installUndiciMock(() => ({
+    installFetchMock(() => ({
       statusCode: 500,
       body: { code: 500, error: 'someone turned off the internet' },
     }));
@@ -204,7 +225,7 @@ describe('sending the push payload', () => {
   });
 
   test('rejects on communication error', async () => {
-    installUndiciNetworkError();
+    installFetchNetworkError();
 
     const service = new NtfyService();
     service.initialize(new URL('ntfy://:devicekey@nonresolvablehostname'));
@@ -212,7 +233,7 @@ describe('sending the push payload', () => {
   });
 
   test('applies priority header via params override', async () => {
-    const { calls } = installUndiciMock(() => ({
+    const { calls } = installFetchMock(() => ({
       statusCode: 200,
       body: { code: 200, error: 'OK' },
     }));

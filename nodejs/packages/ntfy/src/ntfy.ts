@@ -1,10 +1,15 @@
 // Ported from Go pkg/services/ntfy/ntfy.go.
 import type { Dispatcher } from 'undici';
+import {
+  JsonClient,
+  type Logger,
+  type Params,
+  parseBody,
+  PropKeyResolver,
+  type Service,
+  Standard,
+} from '@shoutrrr/core';
 import { Config, fieldSchema } from './config.js';
-import { ApiError, JsonClient } from './core/jsonclient.js';
-import { PropKeyResolver } from './core/propKeyResolver.js';
-import { Standard } from './core/standard.js';
-import type { Logger, Params, Service } from './core/types.js';
 import { type ApiResponse, formatApiError } from './payload.js';
 import { priorityEnum } from './priority.js';
 
@@ -31,7 +36,9 @@ export class NtfyService implements Service {
 
   /** initialize loads config from configURL and sets the logger. */
   initialize(url: URL, logger?: Logger): void {
-    this.standard.setLogger(logger);
+    if (logger) {
+      this.standard.setLogger(logger);
+    }
     this.config = new Config();
     this.config.setURL(url);
   }
@@ -41,11 +48,7 @@ export class NtfyService implements Service {
     const config = this.config;
 
     if (params) {
-      const pkr = new PropKeyResolver(
-        config as unknown as Record<string, unknown>,
-        fieldSchema,
-        config.enums(),
-      );
+      const pkr = new PropKeyResolver(config, fieldSchema);
       pkr.updateConfigFromParams(params);
     }
 
@@ -58,7 +61,7 @@ export class NtfyService implements Service {
     );
 
     // ntfy expects a raw text body and custom headers, not a JSON Content-Type.
-    delete client.headers['Content-Type'];
+    // request() leaves Content-Type unset unless a contentType opt is passed.
     client.headers['User-Agent'] = `shoutrrr/${VERSION}`;
     addHeaderIfNotEmpty(client.headers, 'Title', config.title);
     addHeaderIfNotEmpty(
@@ -85,17 +88,25 @@ export class NtfyService implements Service {
       client.headers['Markdown'] = 'yes';
     }
 
+    let res: Response;
     try {
-      await client.post<ApiResponse>(config.getAPIURL(), message);
+      // ntfy posts the message as a raw text body with ntfy-specific headers,
+      // so use request() (no JSON Content-Type) instead of post().
+      res = await client.request('POST', config.getAPIURL(), { body: message });
     } catch (err) {
-      if (err instanceof ApiError) {
-        const body = (err.body ?? {}) as ApiResponse;
-        throw new Error(
-          `failed to send ntfy notification: ${formatApiError(body)}`,
-        );
-      }
+      // Transport error (DNS/connection): no response was produced.
       throw new Error(
         `failed to send ntfy notification: ${(err as Error).message}`,
+      );
+    }
+
+    // Always read the body so the response stream is consumed (mirrors the Go
+    // jsonclient, which reads the body on every response). HTTP >= 400 is the
+    // error threshold (matching Go jsonclient.parseResponse and ntfy's apiResponse).
+    const body = ((await parseBody(res)) ?? {}) as ApiResponse;
+    if (res.status >= 400) {
+      throw new Error(
+        `failed to send ntfy notification: ${formatApiError(body)}`,
       );
     }
   }
