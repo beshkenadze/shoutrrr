@@ -1,14 +1,16 @@
 import {
-  buildQueryWithCustomFields,
   EnumlessConfig,
   type FieldSchema,
   PropKeyResolver,
+} from '@shoutrrr/core';
+import {
+  buildQueryWithCustomFields,
   setConfigPropsFromQuery,
-} from './core/index.js';
+} from './customFields.ts';
 import {
   appendCustomQueryValues,
   stripCustomQueryValues,
-} from './customQuery.js';
+} from './customQuery.ts';
 
 /** Scheme is the identifying part of this service's configuration URL. */
 export const Scheme = 'generic';

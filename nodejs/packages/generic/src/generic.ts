@@ -5,19 +5,19 @@ import {
   PropKeyResolver,
   type Service,
   Standard,
-  TitleKey as CommonTitleKey,
-} from './core/index.js';
+} from '@shoutrrr/core';
 import {
   type Config,
   configFromWebhookURL,
   configSchema,
   defaultConfig,
   Scheme,
-} from './config.js';
-import { jsonPayload } from './payload.js';
-import { Templater } from './templater.js';
+} from './config.ts';
+import { jsonPayload } from './payload.ts';
+import { Templater } from './templater.ts';
 
-import type { Dispatcher } from 'undici';
+/** Common key for the title param (port of Go `types.TitleKey`). */
+const TitleKey = 'title';
 
 /** Service providing a generic notification webhook (scheme `generic`, custom form `generic+https`). */
 export class GenericService implements Service {
@@ -25,10 +25,8 @@ export class GenericService implements Service {
   private readonly templater = new Templater();
   private config: Config;
   private pkr: PropKeyResolver;
-  private readonly dispatcher?: Dispatcher;
 
-  constructor(opts?: { dispatcher?: Dispatcher }) {
-    this.dispatcher = opts?.dispatcher;
+  constructor() {
     const { config, pkr } = defaultConfig();
     this.config = config;
     this.pkr = pkr;
@@ -40,7 +38,9 @@ export class GenericService implements Service {
 
   /** Initialize loads config from the service URL and stores the logger. */
   initialize(url: URL, logger?: Logger): void {
-    this.logger.setLogger(logger);
+    if (logger) {
+      this.logger.setLogger(logger);
+    }
     const { config, pkr } = defaultConfig();
     this.config = config;
     this.pkr = pkr;
@@ -71,9 +71,11 @@ export class GenericService implements Service {
 
     const sendParamsInput: Params = params ? { ...params } : {};
     // Mirror Go: log (don't throw on) the first invalid/unknown param and proceed with the send.
-    const updateErr = resolver.updateConfigFromParams(sendParamsInput);
-    if (updateErr) {
-      this.logger.logf('Failed to update params: %v', updateErr.message);
+    try {
+      resolver.updateConfigFromParams(sendParamsInput);
+    } catch (err) {
+      const reason = err instanceof Error ? err.message : String(err);
+      this.logger.logf('Failed to update params: %v', reason);
     }
 
     const sendParams = createSendParams(config, sendParamsInput, message);
@@ -106,14 +108,15 @@ export class GenericService implements Service {
       headers[key] = value;
     }
 
-    const client = new JsonClient({ dispatcher: this.dispatcher });
-    const res = await client.raw(postURL, {
-      method: config.requestMethod,
+    const client = new JsonClient();
+    const res = await client.request(config.requestMethod, postURL, {
       headers,
+      contentType: config.contentType,
       body: payload,
     });
+    const responseBody = await res.text();
 
-    this.logger.log('Server response: ', res.body);
+    this.logger.logf('Server response: %s', responseBody);
 
     if (res.status >= 300) {
       throw new Error(`server returned response status code ${res.status}`);
@@ -146,7 +149,7 @@ export class GenericService implements Service {
 export function createSendParams(config: Config, params: Params, message: string): Params {
   const sendParams: Params = {};
   for (const [key, val] of Object.entries(params)) {
-    const target = key === CommonTitleKey ? config.titleKey : key;
+    const target = key === TitleKey ? config.titleKey : key;
     sendParams[target] = val;
   }
   sendParams[config.messageKey] = message;

@@ -1,6 +1,6 @@
-import { GenericService } from './generic.js';
+import { GenericService } from './generic.ts';
 
-export { GenericService, createSendParams } from './generic.js';
+export { GenericService, createSendParams } from './generic.ts';
 export {
   Config,
   configFromWebhookURL,
@@ -8,15 +8,15 @@ export {
   defaultConfig,
   DefaultWebhookScheme,
   Scheme,
-} from './config.js';
+} from './config.ts';
 export {
   appendCustomQueryValues,
   normalizedHeaderKey,
   stripCustomQueryValues,
-} from './customQuery.js';
-export { jsonPayload } from './payload.js';
-export { Templater } from './templater.js';
-export type { Logger, Params, Service } from './core/index.js';
+} from './customQuery.ts';
+export { jsonPayload } from './payload.ts';
+export { Templater } from './templater.ts';
+export type { Logger, Params, Service } from '@shoutrrr/core';
 
 /** Descriptor used by the service registry to construct a GenericService for the `generic` scheme. */
 export const descriptor = {
