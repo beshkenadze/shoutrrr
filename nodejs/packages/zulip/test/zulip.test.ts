@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import type { Server } from 'bun';
-import { Config, createConfigFromURL, ErrorMessage } from '../src/config.js';
-import { ZulipService } from '../src/zulip.js';
+import { Config, createConfigFromURL, ErrorMessage } from '../src/config.ts';
+import { ZulipService } from '../src/zulip.ts';
 
 describe('the zulip config', () => {
   describe('given a service url with missing parts', () => {
