@@ -1,5 +1,4 @@
 import { afterEach, describe, expect, it } from 'bun:test';
-import { MockAgent } from '../src/core/undici.js';
 import { Config } from '../src/config.js';
 import { parseModeEnum, ParseMode } from '../src/parseMode.js';
 import { createSendMessagePayload } from '../src/payload.js';
@@ -194,44 +193,35 @@ describe('createSendMessagePayload', () => {
 });
 
 describe('sending the payload (mocked HTTP)', () => {
-  let agent: MockAgent | undefined;
-
-  afterEach(async () => {
-    if (agent) {
-      await agent.close();
-      agent = undefined;
-    }
+  const realFetch = globalThis.fetch;
+  afterEach(() => {
+    globalThis.fetch = realFetch;
   });
 
-  function mockAgent(): MockAgent {
-    const a = new MockAgent();
-    a.disableNetConnect();
-    agent = a;
-    return a;
+  const okResponse = () =>
+    new Response(
+      JSON.stringify({ ok: true, result: { message_id: 1, text: 'Message' } }),
+      { status: 200, headers: { 'content-type': 'application/json' } },
+    );
+
+  /** Asserts the request is a POST to bot<token>/sendMessage. */
+  function expectSendMessageRequest(input: string | URL, init?: RequestInit): void {
+    const url = typeof input === 'string' ? input : input.toString();
+    expect(url).toBe(`https://api.telegram.org/bot${TOKEN}/sendMessage`);
+    expect(init?.method).toBe('POST');
   }
 
   it('does not error if the server accepts the payload (per chat)', async () => {
-    const a = mockAgent();
-    const pool = a.get('https://api.telegram.org');
     const chats = ['channel-1', 'channel-2', 'channel-3'];
     const seen: string[] = [];
-    for (const _chat of chats) {
-      pool
-        .intercept({ path: `/bot${TOKEN}/sendMessage`, method: 'POST' })
-        .reply((opts) => {
-          const body = JSON.parse(opts.body as string) as { chat_id: string };
-          seen.push(body.chat_id);
-          return {
-            statusCode: 200,
-            data: JSON.stringify({
-              ok: true,
-              result: { message_id: 1, text: 'Message' },
-            }),
-          };
-        });
-    }
+    globalThis.fetch = (async (input: string | URL, init?: RequestInit) => {
+      expectSendMessageRequest(input, init);
+      const body = JSON.parse(init?.body as string) as { chat_id: string };
+      seen.push(body.chat_id);
+      return okResponse();
+    }) as typeof fetch;
 
-    const service = new TelegramService({ dispatcher: a });
+    const service = new TelegramService();
     service.initialize(
       parseURL(
         'telegram://12345:mock-token@telegram/?chats=channel-1,channel-2,channel-3',
@@ -242,13 +232,11 @@ describe('sending the payload (mocked HTTP)', () => {
   });
 
   it('reports transport errors', async () => {
-    const a = mockAgent();
-    const pool = a.get('https://api.telegram.org');
-    pool
-      .intercept({ path: `/bot${TOKEN}/sendMessage`, method: 'POST' })
-      .replyWithError(new Error('dummy transport error'));
+    globalThis.fetch = (async () => {
+      throw new Error('dummy transport error');
+    }) as unknown as typeof fetch;
 
-    const service = new TelegramService({ dispatcher: a });
+    const service = new TelegramService();
     service.initialize(
       parseURL('telegram://12345:mock-token@telegram/?chats=channel-1'),
     );
@@ -258,21 +246,19 @@ describe('sending the payload (mocked HTTP)', () => {
   });
 
   it('reports Telegram API errors via description', async () => {
-    const a = mockAgent();
-    const pool = a.get('https://api.telegram.org');
-    pool
-      .intercept({ path: `/bot${TOKEN}/sendMessage`, method: 'POST' })
-      .reply(
-        401,
+    globalThis.fetch = (async (input: string | URL, init?: RequestInit) => {
+      expectSendMessageRequest(input, init);
+      return new Response(
         JSON.stringify({
           ok: false,
           error_code: 401,
           description: 'Unauthorized',
         }),
-        { headers: { 'content-type': 'application/json' } },
+        { status: 401, headers: { 'content-type': 'application/json' } },
       );
+    }) as typeof fetch;
 
-    const service = new TelegramService({ dispatcher: a });
+    const service = new TelegramService();
     service.initialize(
       parseURL('telegram://12345:mock-token@telegram/?chats=channel-1'),
     );
@@ -290,21 +276,15 @@ describe('sending the payload (mocked HTTP)', () => {
   });
 
   it('applies a param override without mutating the stored config', async () => {
-    const a = mockAgent();
-    const pool = a.get('https://api.telegram.org');
     let seenParseMode: string | undefined;
-    pool
-      .intercept({ path: `/bot${TOKEN}/sendMessage`, method: 'POST' })
-      .reply((opts) => {
-        const body = JSON.parse(opts.body as string) as { parse_mode?: string };
-        seenParseMode = body.parse_mode;
-        return {
-          statusCode: 200,
-          data: JSON.stringify({ ok: true, result: { message_id: 1, text: 'm' } }),
-        };
-      });
+    globalThis.fetch = (async (input: string | URL, init?: RequestInit) => {
+      expectSendMessageRequest(input, init);
+      const body = JSON.parse(init?.body as string) as { parse_mode?: string };
+      seenParseMode = body.parse_mode;
+      return okResponse();
+    }) as typeof fetch;
 
-    const service = new TelegramService({ dispatcher: a });
+    const service = new TelegramService();
     service.initialize(
       parseURL('telegram://12345:mock-token@telegram/?chats=channel-1'),
     );
@@ -316,7 +296,12 @@ describe('sending the payload (mocked HTTP)', () => {
 });
 
 describe('message length limit', () => {
-  it('rejects a message longer than 4096 chars', async () => {
+  const realFetch = globalThis.fetch;
+  afterEach(() => {
+    globalThis.fetch = realFetch;
+  });
+
+  it('rejects a message longer than 4096 bytes', async () => {
     const service = new TelegramService();
     service.initialize(
       parseURL('telegram://12345:mock-token@telegram/?chats=channel-1'),
@@ -327,12 +312,22 @@ describe('message length limit', () => {
     );
   });
 
-  it('accepts a message of exactly 4096 chars (length check passes)', () => {
+  it('accepts a message of exactly 4096 bytes (boundary passes the guard)', async () => {
+    let sent = false;
+    globalThis.fetch = (async () => {
+      sent = true;
+      return new Response(
+        JSON.stringify({ ok: true, result: { message_id: 1, text: 'm' } }),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      );
+    }) as unknown as typeof fetch;
+
     const service = new TelegramService();
     service.initialize(
       parseURL('telegram://12345:mock-token@telegram/?chats=channel-1'),
     );
-    // Length check is fine; we only assert it does not throw on the guard.
-    expect('a'.repeat(4096).length).toBe(4096);
+    // Exactly at the limit must pass the guard and reach the HTTP call.
+    await service.send('a'.repeat(4096));
+    expect(sent).toBe(true);
   });
 });

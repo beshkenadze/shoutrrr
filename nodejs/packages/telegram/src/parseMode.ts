@@ -1,6 +1,5 @@
 // Port of telegram_parsemode.go
-import { createEnumFormatter } from './core/enumFormatter.js';
-import type { EnumFormatter } from './core/types.js';
+import { createEnumFormatter, type EnumFormatter } from '@shoutrrr/core';
 
 /** ParseMode enum values, matching the Go iota ordering. */
 export const ParseMode = {

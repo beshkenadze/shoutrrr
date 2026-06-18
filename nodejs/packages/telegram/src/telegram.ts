@@ -1,29 +1,22 @@
 // Port of telegram.go (Service)
-import type { Dispatcher } from './core/undici.js';
+import {
+  JsonClient,
+  PropKeyResolver,
+  Standard,
+  type Logger,
+  type Params,
+  type Service,
+} from '@shoutrrr/core';
 import { Client } from './client.js';
 import { Config, fields } from './config.js';
-import { JsonClient } from './core/jsonclient.js';
-import { PropKeyResolver } from './core/propKeyResolver.js';
-import { Standard } from './core/standard.js';
-import type { Logger, Params, Service } from './core/types.js';
 import { createSendMessagePayload } from './payload.js';
 
 const MAX_LENGTH = 4096;
-
-export interface TelegramServiceOptions {
-  /** Injectable undici dispatcher (e.g. MockAgent) for testing. */
-  dispatcher?: Dispatcher;
-}
 
 /** Service sends notifications to a given telegram chat. */
 export class TelegramService implements Service {
   private readonly standard = new Standard();
   private config: Config | undefined;
-  private readonly dispatcher?: Dispatcher;
-
-  constructor(opts: TelegramServiceOptions = {}) {
-    this.dispatcher = opts.dispatcher;
-  }
 
   setLogger(logger: Logger): void {
     this.standard.setLogger(logger);
@@ -31,7 +24,9 @@ export class TelegramService implements Service {
 
   /** Initialize loads the Config from configURL and sets the logger. */
   initialize(configURL: URL, logger?: Logger): void {
-    this.standard.setLogger(logger);
+    if (logger) {
+      this.standard.setLogger(logger);
+    }
     const config = new Config();
     config.preview = true;
     config.notification = true;
@@ -58,11 +53,7 @@ export class TelegramService implements Service {
     // Work on a copy so params overrides don't mutate the stored config.
     const config = Object.assign(new Config(), base);
 
-    const resolver = new PropKeyResolver(
-      config as unknown as Record<string, unknown>,
-      fields,
-      config.enums(),
-    );
+    const resolver = new PropKeyResolver(config, fields);
     resolver.updateConfigFromParams(params);
 
     await this.sendMessageForChatIDs(message, config);
@@ -72,9 +63,8 @@ export class TelegramService implements Service {
     message: string,
     config: Config,
   ): Promise<void> {
-    const json = new JsonClient(
-      this.dispatcher ? { dispatcher: this.dispatcher } : {},
-    );
+    // Default transport is the global fetch (tests override globalThis.fetch).
+    const json = new JsonClient();
     // Mirror Go: iterate the originally-configured chats, but use the
     // params-overridden copy for the payload contents.
     for (const chat of this.getConfig().chats) {

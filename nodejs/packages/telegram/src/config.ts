@@ -1,8 +1,11 @@
 // Port of telegram_config.go + telegram_token.go
-import type { FieldSchema } from './core/format.js';
-import { PropKeyResolver } from './core/propKeyResolver.js';
+import {
+  PropKeyResolver,
+  type EnumFormatter,
+  type FieldSchema,
+  type ServiceConfig,
+} from '@shoutrrr/core';
 import { parseModeEnum, ParseMode } from './parseMode.js';
-import type { EnumFormatter, ServiceConfig } from './core/types.js';
 
 /** Scheme is the identifying part of this service's configuration URL. */
 export const Scheme = 'telegram';
@@ -16,8 +19,11 @@ export function isTokenValid(token: string): boolean {
 
 /** Field schema for the telegram Config. */
 export const fields: FieldSchema[] = [
-  // Token comes from the URL user info, not a query key.
-  { name: 'token', type: 'string', urlParts: ['user'] },
+  // Token comes from the URL user info and is handled manually in
+  // setURL/getURL (split across username:password). It is intentionally
+  // not bound via a urlPart so core's bindToURL does not re-encode the
+  // whole "user:pass" token into the username.
+  { name: 'token', type: 'string' },
   {
     name: 'preview',
     type: 'bool',
@@ -70,11 +76,7 @@ export class Config implements ServiceConfig {
   }
 
   private resolver(): PropKeyResolver {
-    return new PropKeyResolver(
-      this as unknown as Record<string, unknown>,
-      fields,
-      this.enums(),
-    );
+    return new PropKeyResolver(this, fields);
   }
 
   /** GetURL returns a URL representation of the current field values. */
