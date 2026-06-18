@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'bun:test';
+import { afterEach, describe, expect, it } from 'bun:test';
 
 import {
   Config,
@@ -9,9 +9,9 @@ import {
   GenericService,
   jsonPayload,
   normalizedHeaderKey,
-} from '../src/index.js';
-import { MockAgent, PropKeyResolver } from '../src/core/index.js';
-import type { MockReplyOptions, Params } from '../src/core/index.js';
+} from '../src/index.ts';
+import { PropKeyResolver } from '@shoutrrr/core';
+import type { Params } from '@shoutrrr/core';
 
 /** Mirrors Go testServiceURL: setURL then getURL, returning [config, serviceURL]. */
 function testServiceURL(testURL: string): { config: Config; serviceURL: URL } {
@@ -179,124 +179,118 @@ describe('the Generic service', () => {
   });
 
   describe('the service upstream client (mocked)', () => {
-    function makeService(serviceURL: string): { service: GenericService; agent: InstanceType<typeof MockAgent> } {
-      const agent = new MockAgent();
-      agent.disableNetConnect();
-      const service = new GenericService({ dispatcher: agent });
+    const realFetch = globalThis.fetch;
+
+    /** Captured request shape from the most recent fetch. */
+    interface Captured {
+      url: string;
+      method: string;
+      headers: Record<string, string>;
+      body: string | undefined;
+    }
+
+    /**
+     * Overrides globalThis.fetch to capture the outgoing request and return the given response.
+     * Returns the capture slot, populated on the next request. Restored in afterEach.
+     */
+    function captureFetch(status = 200, responseBody = ''): { captured?: Captured } {
+      const slot: { captured?: Captured } = {};
+      globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
+        const headers: Record<string, string> = {};
+        if (init?.headers) {
+          for (const [k, v] of Object.entries(init.headers as Record<string, string>)) {
+            headers[k.toLowerCase()] = String(v);
+          }
+        }
+        slot.captured = {
+          url: String(input),
+          method: init?.method ?? 'GET',
+          headers,
+          body: init?.body === undefined ? undefined : String(init.body),
+        };
+        return new Response(responseBody, { status });
+      }) as typeof fetch;
+      return slot;
+    }
+
+    afterEach(() => {
+      globalThis.fetch = realFetch;
+    });
+
+    function makeService(serviceURL: string): GenericService {
+      const service = new GenericService();
       service.initialize(new URL(serviceURL));
-      return { service, agent };
+      return service;
     }
 
     it('should POST the message body to the webhook target', async () => {
-      const { service, agent } = makeService('generic://host.tld/webhook?disabletls=yes');
-      let seenBody = '';
-      agent
-        .get('http://host.tld')
-        .intercept({ path: '/webhook', method: 'POST' })
-        .reply(200, (opts: MockReplyOptions) => {
-          seenBody = String(opts.body);
-          return '';
-        });
+      const service = makeService('generic://host.tld/webhook?disabletls=yes');
+      const slot = captureFetch();
       await service.send('Message');
-      expect(seenBody).toBe('Message');
+      expect(slot.captured?.url).toBe('http://host.tld/webhook');
+      expect(slot.captured?.method).toBe('POST');
+      expect(slot.captured?.body).toBe('Message');
     });
 
     it('should add configured custom headers to the request', async () => {
-      const { service, agent } = makeService(
+      const service = makeService(
         'generic://host.tld/webhook?disabletls=yes&@authorization=frend&@userAgent=gozilla+1.0',
       );
-      const seenHeaders: Record<string, string | string[] | undefined> = {};
-      agent
-        .get('http://host.tld')
-        .intercept({ path: '/webhook', method: 'POST' })
-        .reply(200, (opts: MockReplyOptions) => {
-          Object.assign(seenHeaders, opts.headers);
-          return '';
-        });
+      const slot = captureFetch();
       await service.send('Message');
-      const lower: Record<string, string> = {};
-      for (const [k, v] of Object.entries(seenHeaders)) {
-        lower[k.toLowerCase()] = String(v);
-      }
-      expect(lower.authorization).toBe('frend');
-      expect(lower['user-agent']).toBe('gozilla 1.0');
+      expect(slot.captured?.headers.authorization).toBe('frend');
+      expect(slot.captured?.headers['user-agent']).toBe('gozilla 1.0');
     });
 
     it('should send the configured content-type', async () => {
-      const { service, agent } = makeService(
+      const service = makeService(
         'generic://host.tld/webhook?disabletls=yes&contenttype=text/plain',
       );
-      let contentType = '';
-      agent
-        .get('http://host.tld')
-        .intercept({ path: '/webhook', method: 'POST' })
-        .reply(200, (opts: MockReplyOptions) => {
-          const headers = opts.headers as Record<string, string>;
-          for (const [k, v] of Object.entries(headers)) {
-            if (k.toLowerCase() === 'content-type') {
-              contentType = String(v);
-            }
-          }
-          return '';
-        });
+      const slot = captureFetch();
       await service.send('Message');
-      expect(contentType).toBe('text/plain');
+      expect(slot.captured?.headers['content-type']).toBe('text/plain');
     });
 
     it('should include extra data fields in the json body', async () => {
-      const { service, agent } = makeService(
+      const service = makeService(
         'generic://host.tld/webhook?disabletls=yes&template=json&$context=inside+joke',
       );
-      let body: unknown;
-      agent
-        .get('http://host.tld')
-        .intercept({ path: '/webhook', method: 'POST' })
-        .reply(200, (opts: MockReplyOptions) => {
-          body = JSON.parse(String(opts.body));
-          return '';
-        });
+      const slot = captureFetch();
       await service.send('Message');
-      expect(body).toEqual({ message: 'Message', context: 'inside joke' });
+      expect(JSON.parse(slot.captured?.body ?? '')).toEqual({ message: 'Message', context: 'inside joke' });
     });
 
     it('should use the configured HTTP method', async () => {
-      const { service, agent } = makeService('generic://host.tld/webhook?disabletls=yes&method=GET');
-      let called = false;
-      agent
-        .get('http://host.tld')
-        .intercept({ path: '/webhook', method: 'GET' })
-        .reply(200, () => {
-          called = true;
-          return '';
-        });
+      const service = makeService('generic://host.tld/webhook?disabletls=yes&method=GET');
+      const slot = captureFetch();
       await service.send('Message');
-      expect(called).toBe(true);
+      expect(slot.captured?.method).toBe('GET');
     });
 
     it('should not return an error for an unknown param', async () => {
-      const { service, agent } = makeService('generic://host.tld/webhook?disabletls=yes');
-      agent.get('http://host.tld').intercept({ path: '/webhook', method: 'POST' }).reply(200, '');
+      const service = makeService('generic://host.tld/webhook?disabletls=yes');
+      captureFetch();
       await expect(service.send('Message', { unknown: 'param' })).resolves.toBeUndefined();
     });
 
     it('should not mutate the given params', async () => {
-      const { service, agent } = makeService('generic://host.tld/webhook?disabletls=yes&method=GET');
-      agent.get('http://host.tld').intercept({ path: '/webhook', method: 'GET' }).reply(200, '');
+      const service = makeService('generic://host.tld/webhook?disabletls=yes&method=GET');
+      captureFetch();
       const params: Params = { title: 'TITLE' };
       await service.send('Message', params);
       expect(params).toEqual({ title: 'TITLE' });
     });
 
     it('should reject when the server returns an error status', async () => {
-      const { service, agent } = makeService('generic://host.tld/webhook?disabletls=yes');
-      agent.get('http://host.tld').intercept({ path: '/webhook', method: 'POST' }).reply(500, 'boom');
+      const service = makeService('generic://host.tld/webhook?disabletls=yes');
+      captureFetch(500, 'boom');
       await expect(service.send('Message')).rejects.toThrow();
     });
 
     it('should log (not throw) when a known param has an invalid value', async () => {
       // disabletls is a bool prop; "garbage" is not a valid bool -> Go logs and continues.
-      const { service, agent } = makeService('generic://host.tld/webhook?disabletls=yes');
-      agent.get('http://host.tld').intercept({ path: '/webhook', method: 'POST' }).reply(200, '');
+      const service = makeService('generic://host.tld/webhook?disabletls=yes');
+      captureFetch();
       const logs: string[] = [];
       service.setLogger({ logf: (fmt, ...args) => logs.push([fmt, ...args.map(String)].join(' ')) });
       await expect(service.send('Message', { disabletls: 'garbage' })).resolves.toBeUndefined();

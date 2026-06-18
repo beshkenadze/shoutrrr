@@ -1,4 +1,4 @@
-import type { Params } from './core/index.js';
+import type { Params } from '@shoutrrr/core';
 
 /** A compiled template that renders params into a string. */
 export interface Template {

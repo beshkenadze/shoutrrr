@@ -1,4 +1,4 @@
-import type { Params } from './core/index.js';
+import type { Params } from '@shoutrrr/core';
 
 /**
  * jsonPayload builds the JSON request body for the `json`/`JSON` template, merging the
