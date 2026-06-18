@@ -8,7 +8,7 @@ import {
   DevicesMissing,
   descriptor,
 } from '../src/index.js';
-import { PropKeyResolver } from '../src/core/index.js';
+import { PropKeyResolver } from '@shoutrrr/core';
 import { fields } from '../src/config.js';
 
 // createURL mirrors the Go test helper: User=Token:token, Host=username, query devices.
@@ -144,9 +144,9 @@ describe('the join descriptor', () => {
   });
 });
 
-// Bun's bundled `undici` ships a non-functional MockAgent stub, so HTTP is
-// mocked with a real local Bun.serve and the service's baseURL override. This
-// performs an actual request through undici, asserting the endpoint, method,
+// HTTP is exercised against a real local Bun.serve with the service's baseURL
+// override, so the JsonClient request flows through the default global fetch
+// transport. This performs an actual request, asserting the endpoint, method,
 // content-type and query params (apikey + deviceIds + text), mirroring the Go
 // httpmock test (200 resolves, error rejects).
 describe('sending the payload', () => {
