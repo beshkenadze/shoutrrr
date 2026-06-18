@@ -14,6 +14,7 @@
     "test": "bun test"
   },
   "dependencies": {
+    "@shoutrrr/core": "workspace:*",
     "undici": "^8.5.0"
   },
   "devDependencies": {

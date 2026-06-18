@@ -1,5 +1,11 @@
 // Port of Go pkg/services/gotify/gotify.go.
-import { JsonClient, PropKeyResolver, Standard, type Logger, type Params } from './core/index.js';
+import {
+  JsonClient,
+  PropKeyResolver,
+  Standard,
+  type Logger,
+  type Params,
+} from '@shoutrrr/core';
 import type { Dispatcher } from 'undici';
 import { Config } from './config.js';
 import {
@@ -88,14 +94,25 @@ export class GotifyService extends Standard {
       priority: config.Priority,
     };
 
+    let response: unknown;
     try {
-      await this.client.post<MessageResponse>(postURL, request);
+      response = await this.client.post<MessageResponse>(postURL, request);
     } catch (err) {
       const body = (err as { body?: unknown }).body;
       if (isErrorResponse(body)) {
         throw new Error(formatErrorResponse(body));
       }
       throw new Error(`failed to send notification to Gotify: ${String(err)}`);
+    }
+
+    // Go's jsonclient always json.Unmarshal-s the success body and surfaces any
+    // failure (including a non-JSON 2xx body) as an error. The shared JsonClient
+    // tolerates a non-JSON body by returning the raw text, so reject here to keep
+    // Go parseResponse parity.
+    if (typeof response !== 'object' || response === null) {
+      throw new Error(
+        `failed to send notification to Gotify: unexpected response body`,
+      );
     }
   }
 }
