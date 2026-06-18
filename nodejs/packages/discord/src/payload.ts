@@ -1,8 +1,5 @@
-import {
-  levelString,
-  type MessageItem,
-  MessageLevel,
-} from "./core/index.js";
+import { MessageLevel } from "@shoutrrr/core";
+import { levelString, type MessageItem } from "./message.ts";
 
 /** EmbedFooter mirrors Go discord.embedFooter. */
 export interface EmbedFooter {

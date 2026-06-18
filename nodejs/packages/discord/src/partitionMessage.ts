@@ -1,4 +1,4 @@
-import type { MessageItem, MessageLimit } from "./types.js";
+import type { MessageItem, MessageLimit } from "./message.ts";
 
 const ELLIPSIS = " [...]";
 

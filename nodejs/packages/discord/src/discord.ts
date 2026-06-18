@@ -1,16 +1,15 @@
-import type { Dispatcher } from "undici";
-import { Config } from "./config.js";
 import {
+  ApiError,
+  type FetchLike,
   JsonClient,
   type Logger,
-  type MessageItem,
-  type MessageLimit,
-  messageItemsFromLines,
   type Params,
-  partitionMessage,
   type Service as IService,
   Standard,
-} from "./core/index.js";
+} from "@shoutrrr/core";
+import { Config } from "./config.js";
+import type { MessageItem, MessageLimit } from "./message.ts";
+import { messageItemsFromLines, partitionMessage } from "./partitionMessage.ts";
 import { createPayloadFromItems, type WebhookPayload } from "./payload.js";
 
 const HOOK_URL = "https://discord.com/api/webhooks";
@@ -73,9 +72,9 @@ export class DiscordService extends Standard implements IService {
   private config = new Config();
   private readonly client: JsonClient;
 
-  constructor(opts?: { dispatcher?: Dispatcher }) {
+  constructor(opts?: { fetch?: FetchLike }) {
     super();
-    this.client = new JsonClient({ dispatcher: opts?.dispatcher });
+    this.client = new JsonClient({ fetch: opts?.fetch });
   }
 
   /** initialize loads config from the URL and applies schema defaults first. */
@@ -97,7 +96,7 @@ export class DiscordService extends Standard implements IService {
       const postURL = createAPIURLFromConfig(this.config);
       try {
         // Raw mode posts the message verbatim as the request body.
-        await this.client.postRaw<void>(postURL, message);
+        await this.postRaw(postURL, message);
       } catch (err) {
         firstErr = err;
       }
@@ -107,7 +106,7 @@ export class DiscordService extends Standard implements IService {
         try {
           await this.sendItems(items, params);
         } catch (err) {
-          this.log(err);
+          this.logf("%s", err);
           if (firstErr === undefined) {
             firstErr = err;
           }
@@ -139,6 +138,21 @@ export class DiscordService extends Standard implements IService {
     const postURL = createAPIURLFromConfig(config);
     // post() treats any 2xx (including Discord's 204 No Content) as success.
     await this.client.post<void>(postURL, payload);
+  }
+
+  /**
+   * postRaw posts an already-serialized JSON body verbatim. core's JsonClient
+   * exposes no raw-JSON helper, so we use its `request` escape hatch and apply
+   * the same 2xx-only success rule (Discord replies 204 No Content on success).
+   */
+  private async postRaw(url: string, body: string): Promise<void> {
+    const res = await this.client.request("POST", url, {
+      body,
+      contentType: "application/json",
+    });
+    if (res.status < 200 || res.status >= 300) {
+      throw new ApiError(res.status, await res.text());
+    }
   }
 }
 
