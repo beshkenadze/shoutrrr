@@ -9,6 +9,7 @@
 import type { Params, ServiceConfig, EnumFormatter } from './types.ts';
 import {
   getConfigFieldString,
+  goQueryEscape,
   setConfigField,
   type FieldSchema,
   type URLPart,
@@ -160,7 +161,10 @@ export class PropKeyResolver {
    * whose serialized value equals its default (port of BuildQuery + IsDefault).
    */
   buildQuery(): string {
-    const params = new URLSearchParams();
+    // Go's url.Values.Encode() emits keys in sorted order (this.keys is sorted)
+    // with Go-faithful query escaping (goQueryEscape), which differs from
+    // WHATWG URLSearchParams on chars like '*', '(', ')'.
+    const parts: string[] = [];
     for (const key of this.keys) {
       if (!this.keyIsPrimary(key)) {
         continue;
@@ -174,9 +178,9 @@ export class PropKeyResolver {
       if (this.isDefault(key, value)) {
         continue;
       }
-      params.set(key, value);
+      parts.push(`${goQueryEscape(key)}=${goQueryEscape(value)}`);
     }
-    return params.toString();
+    return parts.join('&');
   }
 }
 

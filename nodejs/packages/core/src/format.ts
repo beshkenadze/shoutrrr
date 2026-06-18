@@ -51,6 +51,8 @@ export interface FieldSchema {
   required?: boolean;
   /** Numeric base for int/uint parsing (defaults to 10). */
   base?: number;
+  /** Bit width for int/uint range validation (e.g. 8 for int8/uint8). */
+  bits?: number;
   /** Separator for string[] fields (defaults to ','). */
   separator?: string;
   /** Name of the EnumFormatter (looked up in the enums map) for enum fields. */
@@ -87,11 +89,45 @@ export function printBool(value: boolean): string {
   return value ? 'Yes' : 'No';
 }
 
+/**
+ * Escapes a string for a URL query component exactly like Go's
+ * `url.QueryEscape`: keeps unreserved chars (`A-Za-z0-9-_.~`), encodes space as
+ * `+`, and percent-encodes every other byte (UTF-8). This matches the byte
+ * output of Go's `url.Values.Encode()`, which WHATWG `URLSearchParams` does not.
+ */
+export function goQueryEscape(s: string): string {
+  const bytes = new TextEncoder().encode(s);
+  let out = '';
+  for (const b of bytes) {
+    if (
+      (b >= 0x41 && b <= 0x5a) || // A-Z
+      (b >= 0x61 && b <= 0x7a) || // a-z
+      (b >= 0x30 && b <= 0x39) || // 0-9
+      b === 0x2d || // -
+      b === 0x5f || // _
+      b === 0x2e || // .
+      b === 0x7e // ~
+    ) {
+      out += String.fromCharCode(b);
+    } else if (b === 0x20) {
+      out += '+';
+    } else {
+      out += `%${b.toString(16).toUpperCase().padStart(2, '0')}`;
+    }
+  }
+  return out;
+}
+
 function fieldType(f: FieldSchema): FieldType {
   return f.type ?? 'string';
 }
 
-function parseIntStrict(raw: string, base: number, signed: boolean): number {
+function parseIntStrict(
+  raw: string,
+  base: number,
+  signed: boolean,
+  bits?: number,
+): number {
   // Mirror Go's strconv.ParseInt/ParseUint: reject trailing garbage and empty.
   const trimmed = raw.trim();
   if (trimmed === '') {
@@ -117,6 +153,17 @@ function parseIntStrict(raw: string, base: number, signed: boolean): number {
   const value = negative ? -n : n;
   if (!signed && value < 0) {
     throw new Error(`negative value not allowed: ${JSON.stringify(raw)}`);
+  }
+  // Enforce the bit-width range, mirroring Go's strconv bitSize argument.
+  if (bits !== undefined && bits > 0) {
+    const [min, max] = signed
+      ? [-(2 ** (bits - 1)), 2 ** (bits - 1) - 1]
+      : [0, 2 ** bits - 1];
+    if (value < min || value > max) {
+      throw new Error(
+        `value ${value} out of range for ${signed ? 'int' : 'uint'}${bits}`,
+      );
+    }
   }
   return value;
 }
@@ -152,10 +199,10 @@ export function setConfigField(
       return;
     }
     case 'int':
-      config[f.name] = parseIntStrict(raw, f.base ?? 10, true);
+      config[f.name] = parseIntStrict(raw, f.base ?? 10, true, f.bits);
       return;
     case 'uint':
-      config[f.name] = parseIntStrict(raw, f.base ?? 10, false);
+      config[f.name] = parseIntStrict(raw, f.base ?? 10, false, f.bits);
       return;
     case 'float': {
       const n = Number(raw);

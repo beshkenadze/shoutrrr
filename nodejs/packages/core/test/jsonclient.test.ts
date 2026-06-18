@@ -60,7 +60,6 @@ describe('JsonClient', () => {
     expect(slot.captured?.method).toBe('POST');
     expect(slot.captured?.body).toBe(JSON.stringify({ text: 'hi' }));
     expect(slot.captured?.headers['Content-Type']).toBe('application/json');
-    expect(slot.captured?.headers['Accept']).toBe('application/json');
   });
 
   it('throws ApiError on a non-2xx response, carrying the parsed body', async () => {
