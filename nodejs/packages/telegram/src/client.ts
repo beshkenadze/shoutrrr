@@ -1,5 +1,5 @@
 // Port of telegram_client.go
-import { ApiError, JsonClient } from './core/jsonclient.js';
+import { ApiError, JsonClient } from '@shoutrrr/core';
 import type {
   ErrorResponse,
   Message,
@@ -25,7 +25,7 @@ export class Client {
 
   /** SendMessage sends the specified message and returns the created Message. */
   async sendMessage(message: SendMessagePayload): Promise<Message | undefined> {
-    let response: MessageResponse;
+    let response: MessageResponse | undefined;
     try {
       response = await this.json.post<MessageResponse>(
         this.apiURL('sendMessage'),
@@ -38,7 +38,9 @@ export class Client {
 
     // A 2xx response carrying ok:false has no transport error to fall back on;
     // Go's GetResponseError(nil) returns nil in that case, so we resolve too.
-    return response.result;
+    // core's JsonClient returns undefined for an empty 2xx body, so guard the
+    // deref to keep resolving cleanly instead of throwing a TypeError.
+    return response?.result;
   }
 }
 
