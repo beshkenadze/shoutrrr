@@ -1,8 +1,7 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { MockAgent } from "undici/index.js";
-import { Config } from "../src/config.js";
-import { OpsgenieService } from "../src/opsgenie.js";
-import { Entity, serializeAlertPayload } from "../src/payload.js";
+import { Config } from "../src/config.ts";
+import { OpsgenieService } from "../src/opsgenie.ts";
+import { Entity, serializeAlertPayload } from "../src/payload.ts";
 
 const mockAPIKey = "eb243592-faa2-4ba2-a551q-1afdf565c889";
 const mockHost = "api.opsgenie.com";
@@ -149,65 +148,82 @@ describe("AlertPayload serialization", () => {
       ),
     ).toThrow();
   });
+
+  test("rejects an unknown query key (Go resolver.Set parity)", () => {
+    const config = new Config();
+    expect(() =>
+      config.setURL(
+        new URL(`opsgenie://${mockHost}/${mockAPIKey}?bogus=value`),
+      ),
+    ).toThrow();
+  });
 });
 
 // ---------------------------------------------------------------------------
-// Service.send via undici MockAgent (asserts GenieKey auth header + JSON body)
+// Service.send via globalThis.fetch override (asserts GenieKey auth + JSON body).
+// Bun's undici MockAgent is a non-functional stub, so the core JsonClient (built
+// on fetch) is exercised by swapping in a capturing fetch stub.
 // ---------------------------------------------------------------------------
 
-describe("the OpsGenie service send", () => {
-  let agent: MockAgent;
+interface CapturedRequest {
+  method: string;
+  path: string;
+  auth: string | null;
+  contentType: string | null;
+  body: string;
+}
 
-  afterEach(async () => {
-    await agent.close();
+const realFetch = globalThis.fetch;
+
+/**
+ * Installs a fetch stub that captures each request and replies with `status`.
+ * Returns the captured requests in call order. Restored via afterEach.
+ */
+function installFetch(status: number): CapturedRequest[] {
+  const captured: CapturedRequest[] = [];
+  globalThis.fetch = (async (
+    input: string | URL | Request,
+    init?: RequestInit,
+  ): Promise<Response> => {
+    const url = new URL(typeof input === "string" ? input : input.toString());
+    const headers = new Headers(init?.headers);
+    captured.push({
+      method: init?.method ?? "GET",
+      path: url.pathname,
+      auth: headers.get("authorization"),
+      contentType: headers.get("content-type"),
+      body: (init?.body as string | undefined) ?? "",
+    });
+    return new Response("", { status });
+  }) as typeof fetch;
+  return captured;
+}
+
+describe("the OpsGenie service send", () => {
+  afterEach(() => {
+    globalThis.fetch = realFetch;
   });
 
   test("sends a simple alert without query params", async () => {
-    agent = new MockAgent();
-    agent.disableNetConnect();
+    const captured = installFetch(202);
 
-    let seenAuth: string | undefined;
-    let seenContentType: string | undefined;
-    let seenBody: string | undefined;
-
-    agent
-      .get("https://api.opsgenie.com")
-      .intercept({ path: "/v2/alerts", method: "POST" })
-      .reply((opts) => {
-        const headers = opts.headers as Record<string, string>;
-        seenAuth = headers.authorization ?? headers.Authorization;
-        seenContentType = headers["content-type"] ?? headers["Content-Type"];
-        seenBody = opts.body as string;
-        return { statusCode: 202, data: "" };
-      });
-
-    const service = new OpsgenieService({ dispatcher: agent });
+    const service = new OpsgenieService();
     service.initialize(new URL(`opsgenie://${mockHost}/${mockAPIKey}`));
     await service.send("hello world", {});
 
-    expect(seenAuth).toBe(`GenieKey ${mockAPIKey}`);
-    expect(seenContentType).toBe("application/json");
-    expect(seenBody).toBe('{"message":"hello world"}');
+    const req = captured[0];
+    expect(req).toBeDefined();
+    expect(req?.method).toBe("POST");
+    expect(req?.path).toBe("/v2/alerts");
+    expect(req?.auth).toBe(`GenieKey ${mockAPIKey}`);
+    expect(req?.contentType).toBe("application/json");
+    expect(req?.body).toBe('{"message":"hello world"}');
   });
 
   test("populates all fields from runtime parameters", async () => {
-    agent = new MockAgent();
-    agent.disableNetConnect();
+    const captured = installFetch(200);
 
-    let seenAuth: string | undefined;
-    let seenBody: string | undefined;
-
-    agent
-      .get("https://api.opsgenie.com")
-      .intercept({ path: "/v2/alerts", method: "POST" })
-      .reply((opts) => {
-        const headers = opts.headers as Record<string, string>;
-        seenAuth = headers.authorization ?? headers.Authorization;
-        seenBody = opts.body as string;
-        return { statusCode: 200, data: "" };
-      });
-
-    const service = new OpsgenieService({ dispatcher: agent });
+    const service = new OpsgenieService();
     service.initialize(new URL(`opsgenie://${mockHost}/${mockAPIKey}`));
     await service.send("An example alert message", {
       alias: "Life is too short for no alias",
@@ -225,8 +241,8 @@ describe("the OpsGenie service send", () => {
       note: "Here is a note",
     });
 
-    expect(seenAuth).toBe(`GenieKey ${mockAPIKey}`);
-    expect(seenBody).toBe(
+    expect(captured[0]?.auth).toBe(`GenieKey ${mockAPIKey}`);
+    expect(captured[0]?.body).toBe(
       '{"message":"An example alert message",' +
         '"alias":"Life is too short for no alias",' +
         '"description":"Every alert needs a description",' +
@@ -244,19 +260,9 @@ describe("the OpsGenie service send", () => {
   });
 
   test("populates all fields from query parameters", async () => {
-    agent = new MockAgent();
-    agent.disableNetConnect();
-    let seenBody: string | undefined;
+    const captured = installFetch(200);
 
-    agent
-      .get("https://api.opsgenie.com")
-      .intercept({ path: "/v2/alerts", method: "POST" })
-      .reply((opts) => {
-        seenBody = opts.body as string;
-        return { statusCode: 200, data: "" };
-      });
-
-    const service = new OpsgenieService({ dispatcher: agent });
+    const service = new OpsgenieService();
     service.initialize(
       new URL(
         `opsgenie://${mockHost}/${mockAPIKey}?alias=query-alias&description=query-description&responders=team:query_team&visibleTo=user:query_user&actions=queryAction1,queryAction2&tags=queryTag1,queryTag2&details=queryKey1:queryValue1,queryKey2:queryValue2&entity=query-entity&source=query-source&priority=P2&user=query-user&note=query-note`,
@@ -264,7 +270,7 @@ describe("the OpsGenie service send", () => {
     );
     await service.send("An example alert message", {});
 
-    expect(seenBody).toBe(
+    expect(captured[0]?.body).toBe(
       '{"message":"An example alert message",' +
         '"alias":"query-alias",' +
         '"description":"query-description",' +
@@ -282,21 +288,9 @@ describe("the OpsGenie service send", () => {
   });
 
   test("does not mix up runtime params and query params across sends", async () => {
-    agent = new MockAgent();
-    agent.disableNetConnect();
-    const bodies: string[] = [];
+    const captured = installFetch(200);
 
-    const pool = agent.get("https://api.opsgenie.com");
-    for (let i = 0; i < 2; i++) {
-      pool
-        .intercept({ path: "/v2/alerts", method: "POST" })
-        .reply((opts) => {
-          bodies.push(opts.body as string);
-          return { statusCode: 200, data: "" };
-        });
-    }
-
-    const service = new OpsgenieService({ dispatcher: agent });
+    const service = new OpsgenieService();
     service.initialize(
       new URL(
         `opsgenie://${mockHost}/${mockAPIKey}?alias=query-alias&description=query-description&responders=team:query_team&visibleTo=user:query_user&actions=queryAction1,queryAction2&tags=queryTag1,queryTag2&details=queryKey1:queryValue1,queryKey2:queryValue2&entity=query-entity&source=query-source&priority=P2&user=query-user&note=query-note`,
@@ -320,7 +314,7 @@ describe("the OpsGenie service send", () => {
 
     await service.send("2");
 
-    expect(bodies[0]).toBe(
+    expect(captured[0]?.body).toBe(
       '{"message":"1","alias":"1","description":"1",' +
         '"responders":[{"type":"team","name":"1"}],' +
         '"visibleTo":[{"type":"team","name":"1"}],' +
@@ -329,7 +323,7 @@ describe("the OpsGenie service send", () => {
         '"details":{"key1":"value1","key2":"value2"},' +
         '"entity":"1","source":"1","priority":"P1","user":"1","note":"1"}',
     );
-    expect(bodies[1]).toBe(
+    expect(captured[1]?.body).toBe(
       '{"message":"2","alias":"query-alias","description":"query-description",' +
         '"responders":[{"type":"team","name":"query_team"}],' +
         '"visibleTo":[{"type":"user","username":"query_user"}],' +
@@ -342,25 +336,16 @@ describe("the OpsGenie service send", () => {
   });
 
   test("splits long messages into title/description on a UTF-8 byte boundary", async () => {
-    agent = new MockAgent();
-    agent.disableNetConnect();
-    let seenBody: string | undefined;
-    agent
-      .get("https://api.opsgenie.com")
-      .intercept({ path: "/v2/alerts", method: "POST" })
-      .reply((opts) => {
-        seenBody = opts.body as string;
-        return { statusCode: 202, data: "" };
-      });
+    const captured = installFetch(202);
 
-    const service = new OpsgenieService({ dispatcher: agent });
+    const service = new OpsgenieService();
     service.initialize(new URL(`opsgenie://${mockHost}/${mockAPIKey}`));
 
     // 140 'あ' = 420 UTF-8 bytes; Go would cut the title at 130 bytes.
     const message = "あ".repeat(140);
     await service.send(message, {});
 
-    const parsed = JSON.parse(seenBody as string) as {
+    const parsed = JSON.parse(captured[0]?.body ?? "") as {
       message: string;
       description: string;
     };
@@ -371,14 +356,9 @@ describe("the OpsGenie service send", () => {
   });
 
   test("rejects on a non-2xx response", async () => {
-    agent = new MockAgent();
-    agent.disableNetConnect();
-    agent
-      .get("https://api.opsgenie.com")
-      .intercept({ path: "/v2/alerts", method: "POST" })
-      .reply(422, { message: "invalid" });
+    installFetch(422);
 
-    const service = new OpsgenieService({ dispatcher: agent });
+    const service = new OpsgenieService();
     service.initialize(new URL(`opsgenie://${mockHost}/${mockAPIKey}`));
     await expect(service.send("boom", {})).rejects.toThrow();
   });

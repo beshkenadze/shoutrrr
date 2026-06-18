@@ -1,13 +1,19 @@
 import type { Dispatcher } from "undici";
-import { Config } from "./config.js";
-import { JsonClient } from "./core/jsonclient.js";
-import { Standard } from "./core/standard.js";
-import type { Logger, Params, Service } from "./core/types.js";
+import {
+  ApiError,
+  JsonClient,
+  parseBody,
+  Standard,
+  type Logger,
+  type Params,
+  type Service,
+} from "@shoutrrr/core";
+import { Config } from "./config.ts";
 import {
   type AlertPayload,
   Entity,
   serializeAlertPayload,
-} from "./payload.js";
+} from "./payload.ts";
 
 /** Maximum message length (in bytes) before it is split into title + description. */
 const MAX_TITLE_LENGTH = 130;
@@ -49,7 +55,9 @@ export class OpsgenieService extends Standard implements Service {
   }
 
   initialize(url: URL, logger?: Logger): void {
-    this.setLogger(logger);
+    if (logger) {
+      this.setLogger(logger);
+    }
     const config = new Config();
     config.setURL(url);
     this.config = config;
@@ -70,13 +78,19 @@ export class OpsgenieService extends Standard implements Service {
     payload: AlertPayload,
   ): Promise<void> {
     const client = new JsonClient(
-      this.dispatcher ? { dispatcher: this.dispatcher } : undefined,
+      this.dispatcher ? { dispatcher: this.dispatcher } : {},
     );
     client.headers.Authorization = `GenieKey ${apiKey}`;
-    client.headers["Content-Type"] = "application/json";
 
-    // Faithful JSON byte order requires custom serialization; POST it raw.
-    await client.postRaw(url, serializeAlertPayload(payload));
+    // Faithful JSON byte order requires custom serialization; POST the raw body
+    // via the request escape hatch (post() would re-stringify and reorder keys).
+    const res = await client.request("POST", url, {
+      body: serializeAlertPayload(payload),
+      contentType: "application/json",
+    });
+    if (res.status < 200 || res.status >= 300) {
+      throw new ApiError(res.status, await parseBody(res));
+    }
   }
 
   private newAlertPayload(
@@ -86,7 +100,7 @@ export class OpsgenieService extends Standard implements Service {
   ): AlertPayload {
     // Defensive copy so runtime params never leak into the stored config.
     const fields = cloneConfig(config);
-    fields.newResolver().updateConfigFromParams(params);
+    fields.updateFromParams(params);
 
     // Use `title` for the title if available, or if the message is too long.
     // Use `description` for the message in these scenarios.

@@ -1,41 +1,66 @@
 import {
-  type FieldSchema,
-  type PropFactory,
-  encodeQuery,
-} from "./core/format.js";
-import { PropKeyResolver } from "./core/propKeyResolver.js";
-import type { EnumFormatter, ServiceConfig } from "./core/types.js";
-import { Entity } from "./payload.js";
+  goQueryEscape,
+  type EnumFormatter,
+  type ServiceConfig,
+} from "@shoutrrr/core";
+import { Entity } from "./payload.ts";
 
 export const Scheme = "opsgenie";
 export const defaultPort = 443;
 export const defaultHost = "api.opsgenie.com";
 
 /**
- * Field schema for the OpsGenie config query parameters, ported from the Go
- * struct tags in opsgenie_config.go. Host/Port/APIKey are URL parts handled
- * directly in setURL/getURL and are intentionally excluded here.
+ * Plain string query fields. The lowercased name doubles as the query key and
+ * config property, mirroring the Go struct `key:` tags in opsgenie_config.go.
+ * Host/Port/APIKey are URL parts handled directly in set/getURL.
  */
-const FIELDS: FieldSchema[] = [
-  { name: "alias", type: "string", key: ["alias"], desc: "Client-defined identifier of the alert" },
-  { name: "description", type: "string", key: ["description"], desc: "Description field of the alert" },
-  { name: "responders", type: "prop[]", key: ["responders"], desc: "Teams, users, escalations and schedules that the alert will be routed to send notifications" },
-  { name: "visibleTo", type: "prop[]", key: ["visibleTo"], desc: "Teams and users that the alert will become visible to without sending any notification" },
-  { name: "actions", type: "string[]", key: ["actions"], desc: "Custom actions that will be available for the alert" },
-  { name: "tags", type: "string[]", key: ["tags"], desc: "Tags of the alert" },
-  { name: "details", type: "map", key: ["details"], desc: "Map of key-value pairs to use as custom properties of the alert" },
-  { name: "entity", type: "string", key: ["entity"], desc: "Entity field of the alert" },
-  { name: "source", type: "string", key: ["source"], desc: "Source field of the alert" },
-  { name: "priority", type: "string", key: ["priority"], desc: "Priority level of the alert. Possible values are P1, P2, P3, P4 and P5" },
-  { name: "note", type: "string", key: ["note"], desc: "Additional note that will be added while creating the alert" },
-  { name: "user", type: "string", key: ["user"], desc: "Display name of the request owner" },
-  { name: "title", type: "string", key: ["title"], default: "", desc: "notification title, optionally set by the sender" },
-];
+const STRING_FIELDS = [
+  "alias",
+  "description",
+  "entity",
+  "source",
+  "priority",
+  "note",
+  "user",
+  "title",
+] as const;
+type StringField = (typeof STRING_FIELDS)[number];
 
-const PROP_FACTORIES: Record<string, PropFactory> = {
-  responders: () => new Entity(),
-  visibleTo: () => new Entity(),
-};
+/** Comma-separated string list query fields. */
+const STRING_ARRAY_FIELDS = ["actions", "tags"] as const;
+
+/** Entity (prop[]) query fields, keyed by the lowercased query key. */
+const ENTITY_FIELDS = ["responders", "visibleTo"] as const;
+type EntityField = (typeof ENTITY_FIELDS)[number];
+
+/** Parses "key:value,key2:value2" into a map; a colon in a value errors (Go parity). */
+function parseDetails(raw: string): Record<string, string> {
+  const result: Record<string, string> = {};
+  for (const pair of raw.split(",")) {
+    const elems = pair.split(":");
+    if (elems.length !== 2) {
+      throw new Error("invalid field value format");
+    }
+    result[elems[0] as string] = elems[1] as string;
+  }
+  return result;
+}
+
+/** Serializes a details map back to "key:value,key2:value2". */
+function serializeDetails(details: Record<string, string>): string {
+  return Object.entries(details)
+    .map(([k, v]) => `${k}:${v}`)
+    .join(",");
+}
+
+/** Parses a comma-separated list of "type:identifier" entities. */
+function parseEntities(raw: string): Entity[] {
+  return raw.split(",").map((part) => {
+    const entity = new Entity();
+    entity.setFromProp(part);
+    return entity;
+  });
+}
 
 /** Config for the OpsGenie service. Port of opsgenie_config.go Config. */
 export class Config implements ServiceConfig {
@@ -63,16 +88,79 @@ export class Config implements ServiceConfig {
     return {};
   }
 
-  /** Creates a fresh PropKeyResolver bound to this config and the field schema. */
-  newResolver(): PropKeyResolver {
-    return new PropKeyResolver(this, FIELDS, PROP_FACTORIES);
+  /** Assigns a single query/param field from its string value (unknown keys ignored). */
+  set(key: string, value: string): void {
+    const field = key.toLowerCase();
+    switch (field) {
+      case "responders":
+        this.responders = parseEntities(value);
+        return;
+      case "visibleto":
+        this.visibleTo = parseEntities(value);
+        return;
+      case "actions":
+      case "tags":
+        this[field] = value.split(",");
+        return;
+      case "details":
+        this.details = parseDetails(value);
+        return;
+      default:
+        if (!(STRING_FIELDS as readonly string[]).includes(field)) {
+          // Mirror Go's resolver.Set, which both setURL and
+          // UpdateConfigFromParams propagate as an error on unknown keys.
+          throw new Error(`${key} is not a valid config key`);
+        }
+        this[field as StringField] = value;
+    }
+  }
+
+  /** Applies runtime params onto the config (used after a defensive clone). */
+  updateFromParams(params?: Record<string, string>): void {
+    if (!params) {
+      return;
+    }
+    for (const [key, value] of Object.entries(params)) {
+      this.set(key, value);
+    }
+  }
+
+  /** Builds the non-default query field map (key -> serialized value). */
+  private queryValues(): Record<string, string> {
+    const query: Record<string, string> = {};
+    for (const field of STRING_FIELDS) {
+      if (this[field] !== "") {
+        query[field] = this[field];
+      }
+    }
+    for (const field of STRING_ARRAY_FIELDS) {
+      if (this[field].length > 0) {
+        query[field] = this[field].join(",");
+      }
+    }
+    for (const field of ENTITY_FIELDS) {
+      const entities = this[field as EntityField];
+      if (entities.length > 0) {
+        query[field.toLowerCase()] = entities
+          .map((entity) => entity.getPropValue())
+          .join(",");
+      }
+    }
+    if (Object.keys(this.details).length > 0) {
+      query.details = serializeDetails(this.details);
+    }
+    return query;
   }
 
   /** getURL builds the configuration URL representation. */
   getURL(): URL {
     const host = this.port > 0 ? `${this.host}:${this.port}` : this.host;
-    const query = this.newResolver().buildQuery();
-    const encoded = encodeQuery(query);
+    const query = this.queryValues();
+    // Go's url.Values.Encode(): keys sorted, both sides goQueryEscaped, '&'-joined.
+    const encoded = Object.keys(query)
+      .sort()
+      .map((k) => `${goQueryEscape(k)}=${goQueryEscape(query[k] as string)}`)
+      .join("&");
     const url = new URL(`${Scheme}://${host}/${this.apiKey}`);
     // Assign the raw, Go-compatible query string directly (URLSearchParams would
     // re-encode using %20 instead of '+').
@@ -95,9 +183,8 @@ export class Config implements ServiceConfig {
       this.port = defaultPort;
     }
 
-    const resolver = this.newResolver();
     for (const [key, value] of url.searchParams.entries()) {
-      resolver.set(key, value);
+      this.set(key, value);
     }
   }
 }
