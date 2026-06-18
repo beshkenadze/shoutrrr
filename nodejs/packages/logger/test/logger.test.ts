@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { Config } from '../src/config.js';
 import { descriptor, LoggerService } from '../src/index.js';
-import type { Logger, Params } from '../src/core/types.js';
+import type { Logger, Params } from '@shoutrrr/core';
 
 /** Capturing logger that records every formatted line. */
 function captureLogger(): { logger: Logger; lines: string[] } {
