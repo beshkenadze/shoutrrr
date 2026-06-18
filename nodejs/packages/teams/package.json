@@ -13,7 +13,7 @@
     "test": "bun test"
   },
   "dependencies": {
-    "undici": "^7.16.0"
+    "@shoutrrr/core": "workspace:*"
   },
   "devDependencies": {
     "@types/bun": "^1.2.0",

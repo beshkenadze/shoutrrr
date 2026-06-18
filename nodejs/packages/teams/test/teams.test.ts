@@ -1,7 +1,4 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
-// Resolve the real undici entry (not Bun's incomplete bare-specifier shim) so
-// MockAgent has disableNetConnect/close and interops with the client's request.
-import { MockAgent, setGlobalDispatcher } from 'undici/index.js';
 import {
   buildWebhookURL,
   Config,
@@ -136,54 +133,61 @@ describe('the teams service', () => {
   });
 
   describe('sending the payload', () => {
-    let mockAgent: MockAgent;
+    const scopedPostURL = `https://${scopedDomainHost}/webhookb2/11111111-4444-4444-8444-cccccccccccc@22222222-4444-4444-8444-cccccccccccc/IncomingWebhook/33333333012222222222333333333344/44444444-4444-4444-8444-cccccccccccc`;
+    const legacyPostURL = `https://${LegacyHost}/webhook/11111111-4444-4444-8444-cccccccccccc@22222222-4444-4444-8444-cccccccccccc/IncomingWebhook/33333333012222222222333333333344/44444444-4444-4444-8444-cccccccccccc`;
+
+    const originalFetch = globalThis.fetch;
+    let calls: Array<{ url: string; method: string; body: string }>;
+
+    // Override the global fetch transport (JsonClient's default) so the
+    // assembled webhook URL and MessageCard body can be asserted without a
+    // real network call. Bun's undici MockAgent does not interop with fetch.
+    function stubFetch(status: number, responseBody: string): void {
+      globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
+        const url = typeof input === 'string' ? input : input.toString();
+        calls.push({
+          url,
+          method: String(init?.method ?? 'GET'),
+          body: typeof init?.body === 'string' ? init.body : '',
+        });
+        return new Response(responseBody, { status });
+      }) as typeof fetch;
+    }
 
     beforeEach(() => {
-      mockAgent = new MockAgent();
-      mockAgent.disableNetConnect();
-      setGlobalDispatcher(mockAgent);
+      calls = [];
     });
 
-    afterEach(async () => {
-      await mockAgent.close();
+    afterEach(() => {
+      globalThis.fetch = originalFetch;
     });
 
     it('should not report an error if the server accepts the payload', async () => {
-      const service = new TeamsService({ dispatcher: mockAgent });
+      stubFetch(200, '');
+      const service = new TeamsService();
       service.initialize(new URL(scopedURLBase));
-
-      let receivedBody = '';
-      mockAgent
-        .get(`https://${scopedDomainHost}`)
-        .intercept({
-          path: '/webhookb2/11111111-4444-4444-8444-cccccccccccc@22222222-4444-4444-8444-cccccccccccc/IncomingWebhook/33333333012222222222333333333344/44444444-4444-4444-8444-cccccccccccc',
-          method: 'POST',
-        })
-        .reply(200, (opts) => {
-          receivedBody = String(opts.body);
-          return '';
-        });
 
       await service.send('Message');
 
-      const parsed = JSON.parse(receivedBody) as Record<string, unknown>;
+      expect(calls).toHaveLength(1);
+      expect(calls[0]!.method).toBe('POST');
+      expect(calls[0]!.url).toBe(scopedPostURL);
+
+      const parsed = JSON.parse(calls[0]!.body) as Record<string, unknown>;
       expect(parsed['@type']).toBe('MessageCard');
       expect(parsed.summary).toBe('Message');
     });
 
     it('should reject if the server rejects the payload', async () => {
-      const service = new TeamsService({ dispatcher: mockAgent });
+      stubFetch(500, 'server error');
+      const service = new TeamsService();
       service.initialize(new URL(testURLBase));
 
-      mockAgent
-        .get(`https://${LegacyHost}`)
-        .intercept({
-          path: '/webhook/11111111-4444-4444-8444-cccccccccccc@22222222-4444-4444-8444-cccccccccccc/IncomingWebhook/33333333012222222222333333333344/44444444-4444-4444-8444-cccccccccccc',
-          method: 'POST',
-        })
-        .reply(500, 'server error');
-
       await expect(service.send('Message')).rejects.toThrow();
+
+      expect(calls).toHaveLength(1);
+      expect(calls[0]!.method).toBe('POST');
+      expect(calls[0]!.url).toBe(legacyPostURL);
     });
   });
 });
