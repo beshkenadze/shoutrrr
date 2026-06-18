@@ -5,8 +5,10 @@ import {
   goQueryEscape,
   JsonClient,
   ApiError,
+  PropKeyResolver,
   type FieldSchema,
   type FetchLike,
+  type ServiceConfig,
 } from '../src/index.ts';
 
 describe('format: bits range validation', () => {
@@ -33,6 +35,52 @@ describe('format: bits range validation', () => {
     expect(c.n).toBe(255);
     expect(() => setConfigField({}, uintField, '256', enums)).toThrow();
     expect(() => setConfigField({}, uintField, '-1', enums)).toThrow();
+  });
+});
+
+describe('format: 0x/0b/0o number prefixes (Go StripNumberPrefix parity)', () => {
+  const enums = {};
+  it('parses 0x/0b/0o prefixes regardless of schema base', () => {
+    const f: FieldSchema = { name: 'n', type: 'int' }; // default base 10
+    const c: Record<string, unknown> = {};
+    setConfigField(c, f, '0x1A', enums);
+    expect(c.n).toBe(26);
+    setConfigField(c, f, '0b101', enums);
+    expect(c.n).toBe(5);
+    setConfigField(c, f, '0o17', enums);
+    expect(c.n).toBe(15);
+    setConfigField(c, f, '42', enums); // still plain decimal
+    expect(c.n).toBe(42);
+  });
+  it('accepts a hex color like 0x50d9ff (discord)', () => {
+    const f: FieldSchema = { name: 'color', type: 'uint' };
+    const c: Record<string, unknown> = {};
+    setConfigField(c, f, '0x50d9ff', enums);
+    expect(c.color).toBe(0x50d9ff);
+  });
+});
+
+describe('PropKeyResolver: mixed-case primary keys (keyIsPrimary)', () => {
+  class Cfg implements ServiceConfig {
+    disableTLS = false;
+    getURL(): URL {
+      return new URL('x://');
+    }
+    setURL(): void {}
+    enums(): Record<string, never> {
+      return {};
+    }
+  }
+  const schema: FieldSchema[] = [
+    { name: 'disableTLS', type: 'bool', key: ['disableTLS'], default: 'No' },
+  ];
+
+  it('emits a mixed-case-keyed field in buildQuery() (not dropped)', () => {
+    const cfg = new Cfg();
+    cfg.disableTLS = true; // non-default => should be emitted
+    const resolver = new PropKeyResolver(cfg, schema);
+    expect(resolver.keyIsPrimary('disabletls')).toBe(true);
+    expect(resolver.buildQuery()).toBe('disabletls=Yes');
   });
 });
 
