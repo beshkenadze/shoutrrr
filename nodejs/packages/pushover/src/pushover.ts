@@ -1,6 +1,6 @@
 import type { Dispatcher } from 'undici';
-import type { Logger, Params, Service } from './core/index.js';
-import { JsonClient, PropKeyResolver, Standard } from './core/index.js';
+import type { FetchLike, Logger, Params, Service } from '@shoutrrr/core';
+import { JsonClient, PropKeyResolver, Standard } from '@shoutrrr/core';
 import { Config } from './config.js';
 
 /** hookURL is the Pushover messages API endpoint. */
@@ -18,14 +18,16 @@ export class PushoverService implements Service {
   /** The messages endpoint; overridable for tests, defaults to the real API. */
   private readonly hookURL: string;
 
-  constructor(opts?: { dispatcher?: Dispatcher; hookURL?: string }) {
-    this.client = new JsonClient({ dispatcher: opts?.dispatcher });
+  constructor(opts?: { dispatcher?: Dispatcher; fetch?: FetchLike; hookURL?: string }) {
+    this.client = new JsonClient({ dispatcher: opts?.dispatcher, fetch: opts?.fetch });
     this.hookURL = opts?.hookURL ?? hookURL;
   }
 
   /** initialize loads the config from the URL and sets the logger. */
   initialize(url: URL, logger?: Logger): void {
-    this.logger.setLogger(logger);
+    if (logger !== undefined) {
+      this.logger.setLogger(logger);
+    }
     this.config = new Config();
     this.resolver = this.config.newResolver();
     this.config.setURLWithResolver(url, this.resolver);
@@ -64,12 +66,20 @@ export class PushoverService implements Service {
       data.set('priority', String(config.priority));
     }
 
-    const res = await this.client.postForm(this.hookURL, data);
+    // postForm's 2xx tolerance is too loose for Pushover (Go accepts only 200,
+    // rejecting e.g. 202), so use the raw request escape hatch and assert the
+    // exact status ourselves.
+    const res = await this.client.request('POST', this.hookURL, {
+      body: data.toString(),
+      contentType: 'application/x-www-form-urlencoded',
+    });
 
     // Go accepts only HTTP 200; any other status is an error.
-    if (res.statusCode !== 200) {
+    if (res.status !== 200) {
+      // Mirror Go's res.Status line ("<code> <reason>") in the error message.
+      const statusLine = res.statusText ? `${res.status} ${res.statusText}` : `${res.status}`;
       throw new Error(
-        `failed to send notification to pushover device ${JSON.stringify(device)}, response status ${JSON.stringify(res.status)}`,
+        `failed to send notification to pushover device ${JSON.stringify(device)}, response status ${JSON.stringify(statusLine)}`,
       );
     }
   }

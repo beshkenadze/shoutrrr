@@ -1,6 +1,6 @@
 export { PushoverService } from './pushover.js';
 export { Config, Scheme, UserMissing, TokenMissing, fieldSchema } from './config.js';
-export * from './core/index.js';
+export * from '@shoutrrr/core';
 
 import { PushoverService } from './pushover.js';
 
